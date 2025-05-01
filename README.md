@@ -2,6 +2,10 @@
 
 A lightweight, customizable real-time chart component for React applications.
 
+## Demo
+
+[Live Preview](https://codesandbox.io/p/sandbox/9jkdyy)
+
 ## Installation
 
 ```bash
@@ -14,7 +18,7 @@ npm install react-realtime-chart
 import RealtimeChart, { type RealtimeChartData, type RealtimeChartOptions } from "react-realtime-chart";
 import { useEffect, useState } from "react";
 
-const randomInt = (min, max) => {
+const randomInt = (min: number, max: number) => {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
@@ -28,11 +32,11 @@ const generateRandomRealtimeData = (n = 10, step = 1, min = 0, max = 100, date =
 };
 
 function Demo() {
-  const [data, setData] = useState([
+  const [data, setData] = useState<RealtimeChartData[][]>([
     [...generateRandomRealtimeData(120, 1, 10, 90)]
   ]);
 
-  const options = {
+  const options: RealtimeChartOptions = {
     margin: { top: 10, right: 25, bottom: 25, left: 50 },
     colors: ["#171717"],
     lines: [{ area: false }],
