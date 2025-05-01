@@ -1,0 +1,14 @@
+.vscode
+/build
+/node_modules
+/public
+.dockerignore
+.gitignore
+.npmignore
+biome.json
+Dockerfile
+package-lock.json
+tsconfig.json
+tsconfig.lib.json
+tsconfig.node.json
+index.html
