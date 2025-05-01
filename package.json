@@ -5,6 +5,12 @@
   "main": "lib/index.js",
   "module": "lib/index.js",
   "types": "lib/index.d.ts",
+  "description": "A lightweight, customizable real-time chart component for React applications",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jkuri/react-realtime-chart"
+  },
+  "keywords": ["react", "chart", "realtime", "d3", "visualization", "time-series", "data-visualization"],
   "scripts": {
     "start": "vite",
     "build": "tsc -b && vite build",
@@ -34,5 +40,15 @@
     "typescript-eslint": "^8.26.1",
     "vite": "^6.3.1",
     "vite-plugin-checker": "^0.9.1"
-  }
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0",
+    "react-dom": ">=17.0.0"
+  },
+  "author": {
+    "name": "Jan Kuri",
+    "email": "jkuri88@gmail.com"
+  },
+  "license": "MIT",
+  "readme": "README.md"
 }
