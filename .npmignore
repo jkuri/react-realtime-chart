@@ -6,6 +6,7 @@
 /lib
 .dockerignore
 .gitignore
+.gitattributes
 .npmignore
 biome.json
 Dockerfile

@@ -1,14 +1,14 @@
 {
   "name": "react-realtime-chart",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
-  "main": "lib/index.js",
-  "module": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "description": "A lightweight, customizable real-time chart component for React applications",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jkuri/react-realtime-chart"
+    "url": "git+https://github.com/jkuri/react-realtime-chart.git"
   },
   "keywords": ["react", "chart", "realtime", "d3", "visualization", "time-series", "data-visualization"],
   "scripts": {
