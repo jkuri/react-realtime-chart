@@ -701,6 +701,69 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       // Set the resolution uniform
       gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
 
+      // Render grid lines first (behind the data)
+      // Use our main shader program for grid rendering
+      gl.useProgram(programRef.current);
+      gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
+
+      // Render X-axis grid lines
+      if (options.xGrid?.enable) {
+        const xTicks = x.ticks(options.xGrid.tickNumber || 8);
+        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+        // Create grid lines
+        for (const tick of xTicks) {
+          const xPos = x(tick);
+          gridLines.push({
+            x1: xPos,
+            y1: options.margin?.top || 0,
+            x2: xPos,
+            y2: (options.margin?.top || 0) + dimensions.height,
+          });
+        }
+
+        // Render grid lines
+        const actualOpacity = Math.max(0.15, options.xGrid.opacity || 0.5);
+        const gridColor = hexToRgba(options.xGrid.color || "#e9e9e9", actualOpacity);
+        renderGridLines(
+          gl,
+          gridLines,
+          gridColor,
+          (options.xGrid.size || 1) * pixelRatio,
+          attributeLocations.position,
+          attributeLocations.color,
+        );
+      }
+
+      // Render Y-axis grid lines
+      if (options.yGrid?.enable) {
+        const yTicks = y.ticks(options.yGrid.tickNumber || 5);
+        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+
+        // Create grid lines
+        for (const tick of yTicks) {
+          const yPos = y(tick);
+          gridLines.push({
+            x1: options.margin?.left || 0,
+            y1: yPos,
+            x2: (options.margin?.left || 0) + dimensions.width,
+            y2: yPos,
+          });
+        }
+
+        // Render grid lines
+        const actualOpacity = Math.max(0.15, options.yGrid.opacity || 0.5);
+        const gridColor = hexToRgba(options.yGrid.color || "#e9e9e9", actualOpacity);
+        renderGridLines(
+          gl,
+          gridLines,
+          gridColor,
+          (options.yGrid.size || 1) * pixelRatio,
+          attributeLocations.position,
+          attributeLocations.color,
+        );
+      }
+
       // Enable scissor test to clip chart content to the chart area
       gl.enable(gl.SCISSOR_TEST);
       const chartLeft = (options.margin?.left || 0) * pixelRatio;
@@ -749,144 +812,80 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         }
       });
 
-      // Disable scissor test for grid lines and labels (they should extend into margins)
+      // Disable scissor test for labels (they should extend into margins)
       gl.disable(gl.SCISSOR_TEST);
 
-      // Render X-axis grid and labels with WebGL
-      if (options.xGrid?.enable) {
+      // Render X-axis labels
+      if (options.xGrid?.enable && options.xGrid.ticks) {
         const xTicks = x.ticks(options.xGrid.tickNumber || 8);
-        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
-        // Create grid lines
         for (const tick of xTicks) {
           const xPos = x(tick);
-          gridLines.push({
-            x1: xPos,
-            y1: options.margin?.top || 0,
-            x2: xPos,
-            y2: (options.margin?.top || 0) + dimensions.height,
-          });
-        }
+          const yPos = (options.margin?.top || 0) + dimensions.height + (options.xGrid.tickPadding || 10);
 
-        // Render grid lines
-        // Ensure we're using the main program for grid lines
-        gl.useProgram(programRef.current);
-        gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
-
-        // Boost opacity for better visibility (original values are very low)
-        const actualOpacity = Math.max(0.15, options.xGrid.opacity || 0.5);
-        const gridColor = hexToRgba(options.xGrid.color || "#e9e9e9", actualOpacity);
-        renderGridLines(
-          gl,
-          gridLines,
-          gridColor,
-          (options.xGrid.size || 1) * pixelRatio,
-          attributeLocations.position,
-          attributeLocations.color,
-        );
-
-        // Render tick labels
-        if (options.xGrid.ticks) {
-          for (const tick of xTicks) {
-            const xPos = x(tick);
-            const yPos = (options.margin?.top || 0) + dimensions.height + (options.xGrid.tickPadding || 10);
-
-            let tickText = tick.toString();
-            if (typeof options.xGrid.tickFormat === "function") {
-              tickText = options.xGrid.tickFormat(tick instanceof Date ? tick.getTime() : tick);
-            } else if (typeof options.xGrid.tickFormat === "string") {
-              // Simple time format handling
-              if (options.xGrid.tickFormat.includes("%H:%M:%S") && tick instanceof Date) {
-                tickText = tick.toLocaleTimeString();
-              }
+          let tickText = tick.toString();
+          if (typeof options.xGrid.tickFormat === "function") {
+            tickText = options.xGrid.tickFormat(tick instanceof Date ? tick.getTime() : tick);
+          } else if (typeof options.xGrid.tickFormat === "string") {
+            // Simple time format handling
+            if (options.xGrid.tickFormat.includes("%H:%M:%S") && tick instanceof Date) {
+              tickText = tick.toLocaleTimeString();
             }
-
-            // Calculate text width for centering
-            const textWidth = tickText.length * (options.xGrid.tickFontSize || 10) * 0.6; // Approximate width
-
-            renderText(
-              gl,
-              tickText,
-              xPos - textWidth / 2, // Center the text properly
-              yPos,
-              options.xGrid.tickFontSize || 10,
-              options.xGrid.tickFontFamily || "sans-serif",
-              String(options.xGrid.tickFontWeight || "normal"),
-              options.xGrid.tickFontColor || "#6B6C6F",
-              textProgramRef.current!,
-              textAttributeLocations,
-              textUniformLocations,
-            );
           }
+
+          // Calculate text width for centering
+          const textWidth = tickText.length * (options.xGrid.tickFontSize || 10) * 0.6; // Approximate width
+
+          renderText(
+            gl,
+            tickText,
+            xPos - textWidth / 2, // Center the text properly
+            yPos,
+            options.xGrid.tickFontSize || 10,
+            options.xGrid.tickFontFamily || "sans-serif",
+            String(options.xGrid.tickFontWeight || "normal"),
+            options.xGrid.tickFontColor || "#6B6C6F",
+            textProgramRef.current!,
+            textAttributeLocations,
+            textUniformLocations,
+          );
         }
       }
 
-      // Render Y-axis grid and labels with WebGL
-      if (options.yGrid?.enable) {
+      // Render Y-axis labels
+      if (options.yGrid?.enable && options.yGrid.ticks) {
         const yTicks = y.ticks(options.yGrid.tickNumber || 5);
-        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
-        // Create grid lines
         for (const tick of yTicks) {
-          const yPos = y(tick);
-          gridLines.push({
-            x1: options.margin?.left || 0,
-            y1: yPos,
-            x2: (options.margin?.left || 0) + dimensions.width,
-            y2: yPos,
-          });
-        }
+          const xPos = (options.margin?.left || 0) - (options.yGrid.tickPadding || 10);
+          const yPos = y(tick) - (options.yGrid.tickFontSize || 10) / 2; // Center vertically
 
-        // Render grid lines
-        // Ensure we're using the main program for grid lines
-        gl.useProgram(programRef.current);
-        gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
-
-        // Boost opacity for better visibility (original values are very low)
-        const actualOpacity = Math.max(0.15, options.yGrid.opacity || 0.5);
-        const gridColor = hexToRgba(options.yGrid.color || "#e9e9e9", actualOpacity);
-        renderGridLines(
-          gl,
-          gridLines,
-          gridColor,
-          (options.yGrid.size || 1) * pixelRatio,
-          attributeLocations.position,
-          attributeLocations.color,
-        );
-
-        // Render tick labels
-        if (options.yGrid.ticks) {
-          for (const tick of yTicks) {
-            const xPos = (options.margin?.left || 0) - (options.yGrid.tickPadding || 10);
-            const yPos = y(tick) - (options.yGrid.tickFontSize || 10) / 2; // Center vertically
-
-            let tickText = tick.toString();
-            if (typeof options.yGrid.tickFormat === "function") {
-              tickText = options.yGrid.tickFormat(tick);
-            } else if (typeof options.yGrid.tickFormat === "string") {
-              // Handle format strings like "~s" for SI prefix
-              if (options.yGrid.tickFormat === "~s") {
-                tickText = tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick.toString();
-              }
+          let tickText = tick.toString();
+          if (typeof options.yGrid.tickFormat === "function") {
+            tickText = options.yGrid.tickFormat(tick);
+          } else if (typeof options.yGrid.tickFormat === "string") {
+            // Handle format strings like "~s" for SI prefix
+            if (options.yGrid.tickFormat === "~s") {
+              tickText = tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick.toString();
             }
-
-            // Calculate text width for right alignment
-            const textWidth = tickText.length * (options.yGrid.tickFontSize || 10) * 0.6; // Approximate width
-
-            renderText(
-              gl,
-              tickText,
-              xPos - textWidth, // Right-align the text
-              yPos,
-              options.yGrid.tickFontSize || 10,
-              options.yGrid.tickFontFamily || "sans-serif",
-              String(options.yGrid.tickFontWeight || "normal"),
-              options.yGrid.tickFontColor || "#6B6C6F",
-              textProgramRef.current!,
-              textAttributeLocations,
-              textUniformLocations,
-            );
           }
+
+          // Calculate text width for right alignment
+          const textWidth = tickText.length * (options.yGrid.tickFontSize || 10) * 0.6; // Approximate width
+
+          renderText(
+            gl,
+            tickText,
+            xPos - textWidth, // Right-align the text
+            yPos,
+            options.yGrid.tickFontSize || 10,
+            options.yGrid.tickFontFamily || "sans-serif",
+            String(options.yGrid.tickFontWeight || "normal"),
+            options.yGrid.tickFontColor || "#6B6C6F",
+            textProgramRef.current!,
+            textAttributeLocations,
+            textUniformLocations,
+          );
         }
       }
 
