@@ -8,7 +8,8 @@ export function Demo() {
   const [data, setData] = useState<RealtimeChartData[][]>([[...generateRandomRealtimeData(120, 1, 10, 90)]]);
 
   const options: RealtimeChartOptions = {
-    fps: 60,
+    fps: 30,
+    timeSlots: 120,
     margin: { top: 10, right: 25, bottom: 25, left: 50 },
     colors: [isDark ? "#ffffff" : "#22c55e"],
     lines: [{ area: true, areaColor: "#22c55e", areaOpacity: 0.45, lineWidth: 2 }],

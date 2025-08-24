@@ -1,6 +1,6 @@
 # React Realtime Chart
 
-A lightweight, customizable real-time chart component for React applications.
+A lightweight, customizable real-time chart component for React applications based on WebGL.
 
 ## Demo
 
