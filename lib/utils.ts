@@ -1,3 +1,5 @@
+import type { BufferPool } from "./buffer-pool";
+
 type Primitive = string | number | boolean | symbol | null | undefined;
 
 type DeepMerge<T, U> = T extends Primitive
@@ -167,18 +169,16 @@ export function triangulateArea(lineVertices: number[], baselineY: number): numb
   return triangles;
 }
 
-// Render triangles using WebGL
+// Render triangles using WebGL with buffer pooling
 export function renderTriangles(
   gl: WebGLRenderingContext,
   vertices: number[],
   color: [number, number, number, number],
   positionLocation: number,
   colorLocation: number,
+  bufferPool?: BufferPool,
 ) {
   if (vertices.length === 0) return;
-
-  const positionBuffer = gl.createBuffer();
-  const colorBuffer = gl.createBuffer();
 
   // Create color array for all vertices
   const colors: number[] = [];
@@ -186,24 +186,49 @@ export function renderTriangles(
     colors.push(...color);
   }
 
+  const verticesArray = new Float32Array(vertices);
+  const colorsArray = new Float32Array(colors);
+
+  let positionBuffer: WebGLBuffer | null = null;
+  let colorBuffer: WebGLBuffer | null = null;
+  let shouldDeleteBuffers = false;
+
+  if (bufferPool) {
+    // Use buffer pool
+    positionBuffer = bufferPool.getBuffer(verticesArray.byteLength);
+    colorBuffer = bufferPool.getBuffer(colorsArray.byteLength);
+  } else {
+    // Fallback to creating new buffers
+    positionBuffer = gl.createBuffer();
+    colorBuffer = gl.createBuffer();
+    shouldDeleteBuffers = true;
+  }
+
+  if (!positionBuffer || !colorBuffer) return;
+
   // Bind position buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, verticesArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(positionLocation);
   gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
 
   // Bind color buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, colorsArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(colorLocation);
   gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
 
   // Draw triangles
   gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2);
 
-  // Clean up
-  gl.deleteBuffer(positionBuffer);
-  gl.deleteBuffer(colorBuffer);
+  // Clean up or return to pool
+  if (bufferPool) {
+    bufferPool.releaseBuffer(positionBuffer);
+    bufferPool.releaseBuffer(colorBuffer);
+  } else if (shouldDeleteBuffers) {
+    gl.deleteBuffer(positionBuffer);
+    gl.deleteBuffer(colorBuffer);
+  }
 }
 
 // Render line using WebGL (convert to triangles for thickness)
@@ -214,6 +239,7 @@ export function renderLine(
   lineWidth: number,
   positionLocation: number,
   colorLocation: number,
+  bufferPool?: BufferPool,
 ) {
   if (vertices.length < 4) return; // Need at least 2 points
 
@@ -255,7 +281,7 @@ export function renderLine(
     );
   }
 
-  renderTriangles(gl, lineTriangles, color, positionLocation, colorLocation);
+  renderTriangles(gl, lineTriangles, color, positionLocation, colorLocation, bufferPool);
 }
 
 // Render grid lines using WebGL
@@ -266,10 +292,11 @@ export function renderGridLines(
   lineWidth: number,
   positionLocation: number,
   colorLocation: number,
+  bufferPool?: BufferPool,
 ) {
   for (const line of lines) {
     const vertices = [line.x1, line.y1, line.x2, line.y2];
-    renderLine(gl, vertices, color, lineWidth, positionLocation, colorLocation);
+    renderLine(gl, vertices, color, lineWidth, positionLocation, colorLocation, bufferPool);
   }
 }
 
@@ -307,6 +334,8 @@ export function createTextTexture(
 
   // Create WebGL texture
   const texture = gl.createTexture();
+  if (!texture) return { texture: null, width: canvas.width, height: canvas.height };
+
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -317,7 +346,7 @@ export function createTextTexture(
   return { texture, width: canvas.width, height: canvas.height };
 }
 
-// Render text using WebGL texture
+// Render text using WebGL texture with buffer pooling
 export function renderText(
   gl: WebGLRenderingContext,
   text: string,
@@ -334,9 +363,25 @@ export function renderText(
     texture: WebGLUniformLocation | null;
     color: WebGLUniformLocation | null;
   },
+  bufferPool?: BufferPool,
 ) {
-  const { texture, width, height } = createTextTexture(gl, text, fontSize, fontFamily, fontWeight, color);
-  if (!texture) return;
+  let textureData: { texture: WebGLTexture | null; width: number; height: number } | null = null;
+  let shouldDeleteTexture = false;
+
+  if (bufferPool) {
+    // Try to get cached texture from pool
+    textureData = bufferPool.getTexture(text, fontSize, fontFamily, fontWeight, color);
+  }
+
+  if (!textureData) {
+    // Fallback to creating new texture
+    textureData = createTextTexture(gl, text, fontSize, fontFamily, fontWeight, color);
+    shouldDeleteTexture = true;
+  }
+
+  if (!textureData || !textureData.texture) return;
+
+  const { texture, width, height } = textureData;
 
   // Use text shader program
   gl.useProgram(textProgram);
@@ -361,19 +406,37 @@ export function renderText(
   const y2 = y + height;
 
   const positions = [x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2];
-
   const texCoords = [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1];
 
-  // Create and bind buffers
-  const positionBuffer = gl.createBuffer();
+  const positionsArray = new Float32Array(positions);
+  const texCoordsArray = new Float32Array(texCoords);
+
+  let positionBuffer: WebGLBuffer | null = null;
+  let texCoordBuffer: WebGLBuffer | null = null;
+  let shouldDeleteBuffers = false;
+
+  if (bufferPool) {
+    // Use buffer pool
+    positionBuffer = bufferPool.getBuffer(positionsArray.byteLength);
+    texCoordBuffer = bufferPool.getBuffer(texCoordsArray.byteLength);
+  } else {
+    // Fallback to creating new buffers
+    positionBuffer = gl.createBuffer();
+    texCoordBuffer = gl.createBuffer();
+    shouldDeleteBuffers = true;
+  }
+
+  if (!positionBuffer || !texCoordBuffer) return;
+
+  // Bind position buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, positionsArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(textAttributeLocations.position);
   gl.vertexAttribPointer(textAttributeLocations.position, 2, gl.FLOAT, false, 0, 0);
 
-  const texCoordBuffer = gl.createBuffer();
+  // Bind texture coordinate buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texCoords), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, texCoordsArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(textAttributeLocations.texCoord);
   gl.vertexAttribPointer(textAttributeLocations.texCoord, 2, gl.FLOAT, false, 0, 0);
 
@@ -384,8 +447,17 @@ export function renderText(
   // Draw
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-  // Clean up
-  gl.deleteBuffer(positionBuffer);
-  gl.deleteBuffer(texCoordBuffer);
-  gl.deleteTexture(texture);
+  // Clean up or return to pool
+  if (bufferPool) {
+    bufferPool.releaseBuffer(positionBuffer);
+    bufferPool.releaseBuffer(texCoordBuffer);
+    bufferPool.releaseTexture(texture);
+  } else if (shouldDeleteBuffers) {
+    gl.deleteBuffer(positionBuffer);
+    gl.deleteBuffer(texCoordBuffer);
+  }
+
+  if (shouldDeleteTexture) {
+    gl.deleteTexture(texture);
+  }
 }

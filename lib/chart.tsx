@@ -1,6 +1,7 @@
 import { line, max, min, scaleLinear, scaleTime } from "d3";
 import { subSeconds } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { BufferPool } from "./buffer-pool";
 import { fragmentShaderSource, textFragmentShaderSource, textVertexShaderSource, vertexShaderSource } from "./shaders";
 import { type RealtimeChartData, type RealtimeChartOptions, curveTypeMapping } from "./types";
 import {
@@ -71,6 +72,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
   const textProgramRef = useRef<WebGLProgram | null>(null);
   const positionBufferRef = useRef<WebGLBuffer | null>(null);
   const colorBufferRef = useRef<WebGLBuffer | null>(null);
+  const bufferPoolRef = useRef<BufferPool | null>(null);
   const attributeLocationsRef = useRef<{
     position: number;
     color: number;
@@ -180,6 +182,9 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     // Create buffers
     positionBufferRef.current = gl.createBuffer();
     colorBufferRef.current = gl.createBuffer();
+
+    // Initialize buffer pool
+    bufferPoolRef.current = new BufferPool(gl);
 
     // Enable blending for transparency
     gl.enable(gl.BLEND);
@@ -375,6 +380,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           (options.xGrid.size || 1) * pixelRatio,
           attributeLocations.position,
           attributeLocations.color,
+          bufferPoolRef.current || undefined,
         );
       }
 
@@ -404,6 +410,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           (options.yGrid.size || 1) * pixelRatio,
           attributeLocations.position,
           attributeLocations.color,
+          bufferPoolRef.current || undefined,
         );
       }
 
@@ -436,7 +443,14 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             const triangles = triangulateArea(lineVertices, baselineY);
             const color = hexToRgba(lineOptions.areaColor || "#000", lineOptions.areaOpacity || 0.1);
 
-            renderTriangles(gl, triangles, color, attributeLocations.position, attributeLocations.color);
+            renderTriangles(
+              gl,
+              triangles,
+              color,
+              attributeLocations.position,
+              attributeLocations.color,
+              bufferPoolRef.current || undefined,
+            );
           }
         }
 
@@ -451,7 +465,15 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           const color = hexToRgba(lineOptions.color || "#000", lineOptions.opacity || 1);
           const lineWidth = (lineOptions.lineWidth || 2) * pixelRatio;
 
-          renderLine(gl, vertices, color, lineWidth, attributeLocations.position, attributeLocations.color);
+          renderLine(
+            gl,
+            vertices,
+            color,
+            lineWidth,
+            attributeLocations.position,
+            attributeLocations.color,
+            bufferPoolRef.current || undefined,
+          );
         }
       });
 
@@ -491,6 +513,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             textProgramRef.current!,
             textAttributeLocations,
             textUniformLocations,
+            bufferPoolRef.current || undefined,
           );
         }
       }
@@ -528,8 +551,14 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             textProgramRef.current!,
             textAttributeLocations,
             textUniformLocations,
+            bufferPoolRef.current || undefined,
           );
         }
+      }
+
+      // Periodic buffer pool cleanup
+      if (bufferPoolRef.current) {
+        bufferPoolRef.current.cleanup();
       }
 
       lastDrawTimeRef.current = timestamp;
@@ -547,6 +576,16 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       }
     };
   }, [data, dimensions, options]);
+
+  useEffect(() => {
+    return () => {
+      // Dispose buffer pool resources
+      if (bufferPoolRef.current) {
+        bufferPoolRef.current.dispose();
+        bufferPoolRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <div

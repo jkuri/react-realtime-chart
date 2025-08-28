@@ -5,14 +5,14 @@ import RealtimeChart, { type RealtimeChartData, type RealtimeChartOptions } from
 
 export function Demo() {
   const { isDark } = useTheme();
-  const [data, setData] = useState<RealtimeChartData[][]>([[...generateRandomRealtimeData(120, 1, 10, 90)]]);
+  const [data, setData] = useState<RealtimeChartData[][]>([[...generateRandomRealtimeData(240, 0.1, 10, 90)]]);
 
   const options: RealtimeChartOptions = {
-    fps: 30,
-    timeSlots: 120,
+    fps: 120,
+    timeSlots: 20,
     margin: { top: 10, right: 25, bottom: 25, left: 50 },
-    colors: [isDark ? "#ffffff" : "#22c55e"],
-    lines: [{ area: true, areaColor: "#22c55e", areaOpacity: 0.45, lineWidth: 2 }],
+    colors: [isDark ? "#ffffff" : "#1c1c1c"],
+    lines: [{ area: false, areaColor: "#1c1c1c", areaOpacity: 0.35, lineWidth: 2 }],
     yGrid: {
       min: 0,
       max: 100,
@@ -42,7 +42,7 @@ export function Demo() {
         data[0] = [...data[0], { date: new Date(), value: randomInt(10, 90) }];
         return data;
       });
-    }, 1000);
+    }, 100);
 
     return () => clearInterval(interval);
   }, []);
