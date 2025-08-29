@@ -28,7 +28,7 @@ function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background-secondary hover:bg-background-tertiary"
+      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background-secondary hover:bg-background-tertiary cursor-pointer"
     >
       {theme === "dark" ? <Moon className="size-5 text-foreground" /> : <Sun className="size-5 text-foreground" />}
     </button>
@@ -41,7 +41,7 @@ function GithubLink() {
       href="https://github.com/jkuri/react-realtime-chart"
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center size-5 rounded-lg bg-background-secondary hover:bg-background-tertiary"
+      className="flex items-center justify-center size-5 rounded-lg bg-background-secondary hover:bg-background-tertiary cursor-pointer"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
