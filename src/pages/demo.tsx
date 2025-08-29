@@ -21,10 +21,10 @@ export function Demo() {
       tickNumber: 5,
       tickFormat: (v: string | number) => `${v}%`,
       tickPadding: 20,
-      tickFontWeight: 700,
+      tickFontWeight: 600,
       tickFontColor: isDark ? "#ffffff" : "#000000",
       tickFontSize: 12,
-      tickFontFamily: "Roboto",
+      tickFontFamily: "Inter",
     },
     xGrid: {
       color: isDark ? "#171717" : "#09090B",
@@ -32,8 +32,8 @@ export function Demo() {
       tickNumber: 7,
       tickFontColor: isDark ? "#ffffff" : "#000000",
       tickFontSize: 12,
-      tickFontWeight: 500,
-      tickFontFamily: "Roboto",
+      tickFontWeight: 600,
+      tickFontFamily: "Inter",
     },
   };
 
