@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/react";
 import { Header } from "./components/header";
 import { Demo } from "./pages/demo";
 
@@ -10,6 +11,7 @@ function App() {
           <Demo />
         </div>
       </div>
+      <Analytics />
     </div>
   );
 }
