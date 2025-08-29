@@ -6,7 +6,7 @@ export function Header() {
     <header className="h-12 bg-background-header border-b border-accent">
       <div className="container mx-auto px-4 h-full flex items-center max-w-5xl">
         <div className="w-full flex justify-between items-center">
-          <h3 className="font-medium">React Realtime Chart</h3>
+          <h3 className="font-medium font-heading">React Realtime Chart</h3>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <GithubLink />
@@ -50,7 +50,7 @@ function GithubLink() {
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        stroke-width="2"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       >
