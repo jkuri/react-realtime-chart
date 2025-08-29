@@ -1,6 +1,6 @@
 {
   "name": "react-realtime-chart",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -10,16 +10,7 @@
     "type": "git",
     "url": "git+https://github.com/jkuri/react-realtime-chart.git"
   },
-  "keywords": [
-    "react",
-    "chart",
-    "realtime",
-    "d3",
-    "visualization",
-    "time-series",
-    "data-visualization",
-    "WebGL"
-  ],
+  "keywords": ["react", "chart", "realtime", "d3", "visualization", "time-series", "data-visualization", "WebGL"],
   "scripts": {
     "start": "vite",
     "build": "tsc -b && vite build",
