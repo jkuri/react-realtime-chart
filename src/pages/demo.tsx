@@ -38,15 +38,24 @@ export function Demo() {
   };
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setData((prev) => {
-        const data = [...prev];
-        data[0] = [...data[0], { date: new Date(), value: randomInt(10, 90) }];
-        return data;
-      });
-    }, 100);
+    const worker = new Worker("/timer-worker.js");
 
-    return () => clearInterval(interval);
+    worker.postMessage({ action: "start", interval: 100 });
+
+    worker.onmessage = (e) => {
+      if (e.data.type === "tick") {
+        setData((prev) => {
+          const data = [...prev];
+          data[0] = [...data[0], { date: new Date(), value: randomInt(10, 90) }];
+          return data;
+        });
+      }
+    };
+
+    return () => {
+      worker.postMessage({ action: "stop" });
+      worker.terminate();
+    };
   }, []);
 
   return <RealtimeChart options={options} data={data} />;
