@@ -77,6 +77,10 @@ export function hexToRgb(hex: string): string {
   return `${Number.parseInt(result[1], 16)}, ${Number.parseInt(result[2], 16)}, ${Number.parseInt(result[3], 16)}`;
 }
 
+export function subSeconds(date: Date, seconds: number): Date {
+  return new Date(date.getTime() - seconds * 1000);
+}
+
 // WebGL utility functions
 export function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
   const shader = gl.createShader(type);

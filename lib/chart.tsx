@@ -1,5 +1,4 @@
 import { line, max, min, scaleLinear, scaleTime } from "d3";
-import { subSeconds } from "date-fns";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BufferPool } from "./buffer-pool";
 import { fragmentShaderSource, textFragmentShaderSource, textVertexShaderSource, vertexShaderSource } from "./shaders";
@@ -13,6 +12,7 @@ import {
   renderLine,
   renderText,
   renderTriangles,
+  subSeconds,
   triangulateArea,
 } from "./utils";
 
