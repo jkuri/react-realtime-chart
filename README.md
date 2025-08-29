@@ -4,7 +4,7 @@ A lightweight, customizable real-time chart component for React applications bas
 
 ## Demo
 
-[Live Preview](https://codesandbox.io/p/sandbox/9jkdyy)
+[Live Preview](https://react-realtime-chart.vercel.app/)
 
 ## Installation
 
@@ -156,11 +156,11 @@ type RealtimeChartGridOptions = {
 
 ## Features
 
-- Real-time data visualization with smooth animations
+- Real-time data visualization with smooth animations and GPU acceleration (WebGL)
 - Customizable appearance (colors, line styles, grid, etc.)
 - Multiple data series support
 - Automatic scaling and time-based x-axis
-- Optimized rendering using canvas for performance
+- Optimized rendering using WebGL for performance and GPU acceleration
 - Responsive design
 
 ## License

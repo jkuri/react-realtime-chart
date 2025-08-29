@@ -16,8 +16,8 @@ export function Demo() {
     yGrid: {
       min: 0,
       max: 100,
-      color: isDark ? "ffffff1a" : "#09090B",
-      opacity: isDark ? 0.05 : 0.1,
+      color: isDark ? "#171717" : "#09090B",
+      opacity: isDark ? 1 : 0.1,
       tickNumber: 5,
       tickFormat: (v: string | number) => `${v}%`,
       tickPadding: 25,
@@ -26,8 +26,8 @@ export function Demo() {
       tickFontSize: 11,
     },
     xGrid: {
-      color: isDark ? "ffffff1a" : "#09090B",
-      opacity: isDark ? 0.05 : 0.1,
+      color: isDark ? "#171717" : "#09090B",
+      opacity: isDark ? 1 : 0.1,
       tickNumber: 7,
       tickFontColor: isDark ? "#ffffff" : "#171717",
       tickFontSize: 11,
