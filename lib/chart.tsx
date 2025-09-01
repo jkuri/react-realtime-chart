@@ -1,4 +1,4 @@
-import { line, max, min, scaleLinear, scaleTime } from "d3";
+import { line, max, min, scaleLinear, scaleTime, timeFormat } from "d3";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BufferPool } from "./buffer-pool";
 import { fragmentShaderSource, textFragmentShaderSource, textVertexShaderSource, vertexShaderSource } from "./shaders";
@@ -504,8 +504,9 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             tickText = options.xGrid.tickFormat(tick instanceof Date ? tick.getTime() : tick);
           } else if (typeof options.xGrid.tickFormat === "string") {
             // Simple time format handling
-            if (options.xGrid.tickFormat.includes("%H:%M:%S") && tick instanceof Date) {
-              tickText = tick.toLocaleTimeString();
+            if (options.xGrid.tickFormat.startsWith("%") && tick instanceof Date) {
+              const formatter = timeFormat(options.xGrid.tickFormat);
+              tickText = formatter(tick);
             }
           }
 
