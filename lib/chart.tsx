@@ -292,7 +292,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     initWebGL();
 
     return () => resizeObserver.disconnect();
-  }, [initWebGL, options.margin]);
+  }, [initWebGL]);
 
   const drawChart = useCallback(
     (timestamp: number) => {
@@ -503,7 +503,6 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           if (typeof options.xGrid.tickFormat === "function") {
             tickText = options.xGrid.tickFormat(tick instanceof Date ? tick.getTime() : tick);
           } else if (typeof options.xGrid.tickFormat === "string") {
-            // Simple time format handling
             if (options.xGrid.tickFormat.startsWith("%") && tick instanceof Date) {
               const formatter = timeFormat(options.xGrid.tickFormat);
               tickText = formatter(tick);
