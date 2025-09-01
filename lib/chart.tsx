@@ -275,9 +275,11 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     const resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect;
+        // Store the full container dimensions, don't subtract margins here
+        // The chart area dimensions will be calculated in the render function
         setDimensions({
-          width: width - (options.margin?.left || 0) - (options.margin?.right || 0),
-          height: height - (options.margin?.top || 0) - (options.margin?.bottom || 0),
+          width: Math.max(0, width),
+          height: Math.max(0, height),
         });
       }
     });
@@ -290,7 +292,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     initWebGL();
 
     return () => resizeObserver.disconnect();
-  }, [initWebGL]);
+  }, [initWebGL, options.margin]);
 
   const drawChart = useCallback(
     (timestamp: number) => {
@@ -311,12 +313,21 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       const canvas = canvasRef.current;
       const gl = glRef.current;
 
-      const pixelRatio = window.devicePixelRatio || 1;
-      const totalWidth = dimensions.width + (options.margin?.left || 0) + (options.margin?.right || 0);
-      const totalHeight = dimensions.height + (options.margin?.top || 0) + (options.margin?.bottom || 0);
+      // Calculate chart area dimensions by subtracting margins from container dimensions
+      const marginLeft = options.margin?.left || 0;
+      const marginRight = options.margin?.right || 0;
+      const marginTop = options.margin?.top || 0;
+      const marginBottom = options.margin?.bottom || 0;
 
-      canvas.width = totalWidth * pixelRatio;
-      canvas.height = totalHeight * pixelRatio;
+      const chartWidth = Math.max(0, dimensions.width - marginLeft - marginRight);
+      const chartHeight = Math.max(0, dimensions.height - marginTop - marginBottom);
+
+      // Use full container dimensions for canvas
+      const totalWidth = dimensions.width;
+      const totalHeight = dimensions.height;
+
+      canvas.width = totalWidth;
+      canvas.height = totalHeight;
       canvas.style.width = `${totalWidth}px`;
       canvas.style.height = `${totalHeight}px`;
 
@@ -324,7 +335,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
       const now = new Date();
       const x = scaleTime()
-        .range([options.margin?.left || 0, (options.margin?.left || 0) + dimensions.width])
+        .range([marginLeft, marginLeft + chartWidth])
         .domain([subSeconds(now, options.timeSlots! - 2), subSeconds(now, 2)]);
 
       const values = data.reduce((acc, curr) => acc.concat(curr.map((d) => d.value)), [] as number[]);
@@ -336,7 +347,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       ];
 
       const y = scaleLinear()
-        .range([(options.margin?.top || 0) + dimensions.height, options.margin?.top || 0])
+        .range([marginTop + chartHeight, marginTop])
         .domain([ymin || 0, ymax || 100]);
 
       // Clear the canvas
@@ -364,9 +375,9 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           const xPos = x(tick);
           gridLines.push({
             x1: xPos,
-            y1: options.margin?.top || 0,
+            y1: marginTop,
             x2: xPos,
-            y2: (options.margin?.top || 0) + dimensions.height,
+            y2: marginTop + chartHeight,
           });
         }
 
@@ -377,7 +388,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           gl,
           gridLines,
           gridColor,
-          (options.xGrid.size || 1) * pixelRatio,
+          options.xGrid.size || 1,
           attributeLocations.position,
           attributeLocations.color,
           bufferPoolRef.current || undefined,
@@ -393,9 +404,9 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         for (const tick of yTicks) {
           const yPos = y(tick);
           gridLines.push({
-            x1: options.margin?.left || 0,
+            x1: marginLeft,
             y1: yPos,
-            x2: (options.margin?.left || 0) + dimensions.width,
+            x2: marginLeft + chartWidth,
             y2: yPos,
           });
         }
@@ -407,7 +418,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           gl,
           gridLines,
           gridColor,
-          (options.yGrid.size || 1) * pixelRatio,
+          options.yGrid.size || 1,
           attributeLocations.position,
           attributeLocations.color,
           bufferPoolRef.current || undefined,
@@ -416,13 +427,13 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
       // Enable scissor test to clip chart content to the chart area
       gl.enable(gl.SCISSOR_TEST);
-      const chartLeft = (options.margin?.left || 0) * pixelRatio;
-      const chartTop = (options.margin?.top || 0) * pixelRatio;
-      const chartWidth = dimensions.width * pixelRatio;
-      const chartHeight = dimensions.height * pixelRatio;
+      const chartLeft = marginLeft;
+      const chartTop = marginTop;
+      const scissorWidth = chartWidth;
+      const scissorHeight = chartHeight;
       // Note: WebGL scissor coordinates are from bottom-left, so we need to flip Y
-      const scissorY = canvas.height - chartTop - chartHeight;
-      gl.scissor(chartLeft, scissorY, chartWidth, chartHeight);
+      const scissorY = canvas.height - chartTop - scissorHeight;
+      gl.scissor(chartLeft, scissorY, scissorWidth, scissorHeight);
 
       data.forEach((d, i) => {
         data[i] = updateData(d);
@@ -439,7 +450,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
           if (linePath) {
             const lineVertices = pathToVertices(linePath);
-            const baselineY = (options.margin?.top || 0) + dimensions.height; // Bottom of chart area
+            const baselineY = marginTop + chartHeight; // Bottom of chart area
             const triangles = triangulateArea(lineVertices, baselineY);
             const color = hexToRgba(lineOptions.areaColor || "#000", lineOptions.areaOpacity || 0.1);
 
@@ -463,7 +474,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         if (linePath) {
           const vertices = pathToVertices(linePath);
           const color = hexToRgba(lineOptions.color || "#000", lineOptions.opacity || 1);
-          const lineWidth = (lineOptions.lineWidth || 2) * pixelRatio;
+          const lineWidth = lineOptions.lineWidth || 2;
 
           renderLine(
             gl,
@@ -486,7 +497,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         for (const tick of xTicks) {
           const xPos = x(tick);
-          const yPos = (options.margin?.top || 0) + dimensions.height + (options.xGrid.tickPadding || 10);
+          const yPos = marginTop + chartHeight + (options.xGrid.tickPadding || 10);
 
           let tickText = tick.toString();
           if (typeof options.xGrid.tickFormat === "function") {
@@ -523,7 +534,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         const yTicks = y.ticks(options.yGrid.tickNumber || 5);
 
         for (const tick of yTicks) {
-          const xPos = (options.margin?.left || 0) - (options.yGrid.tickPadding || 10);
+          const xPos = marginLeft - (options.yGrid.tickPadding || 10);
           const yPos = y(tick) - (options.yGrid.tickFontSize || 10) / 2; // Center vertically
 
           let tickText = tick.toString();
