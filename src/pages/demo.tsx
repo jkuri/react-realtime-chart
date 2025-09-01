@@ -31,7 +31,7 @@ export function Demo() {
       tickFontWeight: 600,
       tickFontColor: isDark ? "#ffffff" : "#000000",
       tickFontSize: isMobile ? 9 : 12,
-      tickFontFamily: "Inter",
+      tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
     },
     xGrid: {
       color: isDark ? "#171717" : "#09090B",
@@ -40,7 +40,7 @@ export function Demo() {
       tickFontColor: isDark ? "#ffffff" : "#000000",
       tickFontSize: isMobile ? 9 : 12,
       tickFontWeight: 600,
-      tickFontFamily: "Inter",
+      tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
     },
   };
 

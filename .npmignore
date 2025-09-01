@@ -15,3 +15,4 @@ tsconfig.json
 tsconfig.lib.json
 tsconfig.node.json
 index.html
+.github/
