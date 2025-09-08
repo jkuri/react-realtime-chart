@@ -199,6 +199,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       const validTime = subSeconds(now, options.timeSlots!);
       let sortedData = chartData.filter(Boolean).sort((a, b) => (a.date > b.date ? 1 : -1));
 
+      // Remove old data points that are outside the time window
       let count = 0;
       while (sortedData.length - count + 1 >= options.timeSlots! && sortedData[count + 1].date < validTime) {
         count++;
@@ -207,9 +208,16 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         sortedData = sortedData.slice(count);
       }
 
-      const last = sortedData[sortedData.length - 1] || { date: now, value: 0 };
-      if (last.date === now || sortedData.length < options.timeSlots!) {
-        sortedData.push({ date: now, value: last.value });
+      // Only extend the data if we don't have enough points or if the last point is too old
+      if (sortedData.length > 0) {
+        const last = sortedData[sortedData.length - 1];
+        const timeSinceLastPoint = now.getTime() - last.date.getTime();
+
+        // Only add a new point if the last point is more than 1 second old
+        // This prevents adding duplicate points on every render frame
+        if (timeSinceLastPoint > 1000) {
+          sortedData.push({ date: now, value: last.value });
+        }
       }
 
       return sortedData;
