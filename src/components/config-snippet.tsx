@@ -1,8 +1,8 @@
+import { Check, Copy } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/providers/theme-provider";
 import type { CurveType } from "@/types/curve";
-import { Check, Copy } from "lucide-react";
-import { useMemo, useState } from "react";
 
 interface ConfigSnippetProps {
   fps: number;
@@ -15,7 +15,16 @@ interface ConfigSnippetProps {
   gridOpacity: number;
 }
 
-export function ConfigSnippet({ fps, timeSlots, curveType, color, areaOpacity, lineWidth, gridColor, gridOpacity }: ConfigSnippetProps) {
+export function ConfigSnippet({
+  fps,
+  timeSlots,
+  curveType,
+  color,
+  areaOpacity,
+  lineWidth,
+  gridColor,
+  gridOpacity,
+}: ConfigSnippetProps) {
   const { isDark } = useTheme();
   const isMobile = useMobile();
   const [copied, setCopied] = useState(false);
@@ -65,7 +74,18 @@ export function ConfigSnippet({ fps, timeSlots, curveType, color, areaOpacity, l
     tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
   },
 };`;
-  }, [fps, timeSlots, isMobile, color, areaOpacity, lineWidth, curveType, gridColor, gridOpacity, isDark]);
+  }, [
+    fps,
+    timeSlots,
+    isMobile,
+    color,
+    areaOpacity,
+    lineWidth,
+    curveType,
+    gridColor,
+    gridOpacity,
+    isDark,
+  ]);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(configCode);
@@ -74,13 +94,13 @@ export function ConfigSnippet({ fps, timeSlots, curveType, color, areaOpacity, l
   };
 
   return isMobile ? null : (
-    <div className="w-full p-4 border rounded-md">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold">Configuration</h3>
+    <div className="w-full rounded-md border p-4">
+      <div className="mb-2 flex items-center justify-between">
+        <h3 className="font-semibold text-sm">Configuration</h3>
         <button
           type="button"
           onClick={handleCopy}
-          className="flex items-center gap-2 px-3 py-1.5 text-xs rounded-md border hover:bg-accent transition-colors"
+          className="flex items-center gap-2 rounded-md border px-3 py-1.5 text-xs transition-colors hover:bg-accent"
         >
           {copied ? (
             <>
@@ -95,7 +115,7 @@ export function ConfigSnippet({ fps, timeSlots, curveType, color, areaOpacity, l
           )}
         </button>
       </div>
-      <pre className="text-xs overflow-x-auto bg-accent/10 border p-3 rounded-md">
+      <pre className="overflow-x-auto rounded-md border bg-accent/10 p-3 text-xs">
         <code>{configCode}</code>
       </pre>
     </div>

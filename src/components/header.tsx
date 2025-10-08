@@ -1,12 +1,12 @@
-import { useTheme } from "@/providers/theme-provider";
 import { Moon, Sun } from "lucide-react";
+import { useTheme } from "@/providers/theme-provider";
 
 export function Header() {
   return (
-    <header className="h-12 bg-background-header border-b border-accent">
-      <div className="container mx-auto px-4 h-full flex items-center max-w-7xl">
-        <div className="w-full flex justify-between items-center">
-          <h3 className="font-medium font-heading">React Realtime Chart</h3>
+    <header className="h-12 border-accent border-b bg-background-header">
+      <div className="container mx-auto flex h-full max-w-7xl items-center px-4">
+        <div className="flex w-full items-center justify-between">
+          <h3 className="font-heading font-medium">React Realtime Chart</h3>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <GithubLink />
@@ -28,9 +28,13 @@ function ThemeToggle() {
     <button
       type="button"
       onClick={toggleTheme}
-      className="flex items-center justify-center w-10 h-10 rounded-lg bg-background-secondary hover:bg-background-tertiary cursor-pointer"
+      className="flex h-10 w-10 cursor-pointer items-center justify-center rounded-lg bg-background-secondary hover:bg-background-tertiary"
     >
-      {theme === "dark" ? <Moon className="size-5 text-foreground" /> : <Sun className="size-5 text-foreground" />}
+      {theme === "dark" ? (
+        <Moon className="size-5 text-foreground" />
+      ) : (
+        <Sun className="size-5 text-foreground" />
+      )}
     </button>
   );
 }
@@ -41,7 +45,7 @@ function GithubLink() {
       href="https://github.com/jkuri/react-realtime-chart"
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center justify-center size-5 rounded-lg bg-background-secondary hover:bg-background-tertiary cursor-pointer"
+      className="flex size-5 cursor-pointer items-center justify-center rounded-lg bg-background-secondary hover:bg-background-tertiary"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

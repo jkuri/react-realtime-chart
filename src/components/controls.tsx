@@ -1,11 +1,22 @@
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronDown } from "lucide-react";
+import { useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMobile } from "@/hooks/use-mobile";
 import { useTheme } from "@/providers/theme-provider";
 import type { CurveType } from "@/types/curve";
-import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+
 interface ControlsProps {
   fps: number;
   setFps: (value: number) => void;
@@ -48,12 +59,15 @@ export function Controls({
   const [isOpen, setIsOpen] = useState(false);
 
   const controlsContent = (
-    <div className="z-10 flex flex-col sm:flex-row w-full sm:items-end gap-3">
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+    <div className="z-10 flex w-full flex-col gap-3 sm:flex-row sm:items-end">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="fps" className="block text-sm">
           FPS
         </Label>
-        <Select value={fps.toString()} onValueChange={(value) => setFps(Number(value))}>
+        <Select
+          value={fps.toString()}
+          onValueChange={(value) => setFps(Number(value))}
+        >
           <SelectTrigger id="fps" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -69,11 +83,14 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="time-slots" className="block text-sm">
           Time Slots
         </Label>
-        <Select value={timeSlots.toString()} onValueChange={(value) => setTimeSlots(Number(value))}>
+        <Select
+          value={timeSlots.toString()}
+          onValueChange={(value) => setTimeSlots(Number(value))}
+        >
           <SelectTrigger id="time-slots" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -87,11 +104,14 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="curve-type" className="block text-sm">
           Curve Type
         </Label>
-        <Select value={curveType} onValueChange={(value) => setCurveType(value as CurveType)}>
+        <Select
+          value={curveType}
+          onValueChange={(value) => setCurveType(value as CurveType)}
+        >
           <SelectTrigger id="curve-type" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -113,7 +133,7 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="color" className="block text-sm">
           Color
         </Label>
@@ -122,7 +142,9 @@ export function Controls({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={isDark ? "#ffffff" : "#09090B"}>Primary</SelectItem>
+            <SelectItem value={isDark ? "#ffffff" : "#09090B"}>
+              Primary
+            </SelectItem>
             <SelectItem value="#EF4444">Red</SelectItem>
             <SelectItem value="#F97316">Orange</SelectItem>
             <SelectItem value="#F59E0B">Amber</SelectItem>
@@ -144,11 +166,14 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="area-opacity" className="block text-sm">
           Area Opacity
         </Label>
-        <Select value={areaOpacity.toString()} onValueChange={(value) => setAreaOpacity(Number(value))}>
+        <Select
+          value={areaOpacity.toString()}
+          onValueChange={(value) => setAreaOpacity(Number(value))}
+        >
           <SelectTrigger id="area-opacity" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -170,11 +195,14 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="line-width" className="block text-sm">
           Line Width
         </Label>
-        <Select value={lineWidth.toString()} onValueChange={(value) => setLineWidth(Number(value))}>
+        <Select
+          value={lineWidth.toString()}
+          onValueChange={(value) => setLineWidth(Number(value))}
+        >
           <SelectTrigger id="line-width" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -189,7 +217,7 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="grid-color" className="block text-sm">
           Grid Color
         </Label>
@@ -198,7 +226,9 @@ export function Controls({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value={isDark ? "#171717" : "#CCCCCC"}>Primary</SelectItem>
+            <SelectItem value={isDark ? "#171717" : "#CCCCCC"}>
+              Primary
+            </SelectItem>
             <SelectItem value="#EF4444">Red</SelectItem>
             <SelectItem value="#F97316">Orange</SelectItem>
             <SelectItem value="#F59E0B">Amber</SelectItem>
@@ -220,11 +250,14 @@ export function Controls({
         </Select>
       </div>
 
-      <div className="space-y-1 sm:flex-1 sm:min-w-0">
+      <div className="space-y-1 sm:min-w-0 sm:flex-1">
         <Label htmlFor="grid-opacity" className="block text-sm">
           Grid Opacity
         </Label>
-        <Select value={gridOpacity.toString()} onValueChange={(value) => setGridOpacity(Number(value))}>
+        <Select
+          value={gridOpacity.toString()}
+          onValueChange={(value) => setGridOpacity(Number(value))}
+        >
           <SelectTrigger id="grid-opacity" className="h-8 text-xs">
             <SelectValue />
           </SelectTrigger>
@@ -251,16 +284,20 @@ export function Controls({
   if (isMobile) {
     return (
       <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-        <div className="w-full p-4 border rounded-md">
-          <CollapsibleTrigger className="flex items-center justify-between w-full">
-            <span className="text-sm font-medium">Chart Controls</span>
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <div className="w-full rounded-md border p-4">
+          <CollapsibleTrigger className="flex w-full items-center justify-between">
+            <span className="font-medium text-sm">Chart Controls</span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+            />
           </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4">{controlsContent}</CollapsibleContent>
+          <CollapsibleContent className="pt-4">
+            {controlsContent}
+          </CollapsibleContent>
         </div>
       </Collapsible>
     );
   }
 
-  return <div className="w-full p-4 border rounded-md">{controlsContent}</div>;
+  return <div className="w-full rounded-md border p-4">{controlsContent}</div>;
 }

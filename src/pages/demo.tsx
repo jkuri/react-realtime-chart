@@ -1,16 +1,21 @@
+import { useEffect, useMemo, useState } from "react";
+import RealtimeChart, {
+  type RealtimeChartData,
+  type RealtimeChartOptions,
+} from "react-realtime-chart";
 import { ConfigSnippet } from "@/components/config-snippet";
 import { Controls } from "@/components/controls";
 import { useMobile } from "@/hooks/use-mobile";
 import { generateRandomRealtimeData, randomInt } from "@/lib/data";
 import { useTheme } from "@/providers/theme-provider";
 import type { CurveType } from "@/types/curve";
-import { useEffect, useMemo, useState } from "react";
-import RealtimeChart, { type RealtimeChartData, type RealtimeChartOptions } from "react-realtime-chart";
 
 export function Demo() {
   const { isDark } = useTheme();
   const isMobile = useMobile();
-  const [data, setData] = useState<RealtimeChartData[][]>([[...generateRandomRealtimeData(240, 0.1, 10, 90)]]);
+  const [data, setData] = useState<RealtimeChartData[][]>([
+    [...generateRandomRealtimeData(240, 0.1, 10, 90)],
+  ]);
 
   const [fps, setFps] = useState(120);
   const [timeSlots, setTimeSlots] = useState(isMobile ? 10 : 20);
@@ -73,7 +78,8 @@ export function Demo() {
         tickFontWeight: 400,
         tickFontColor: isDark ? "#ffffff" : "#000000",
         tickFontSize: isMobile ? 9 : 12,
-        tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+        tickFontFamily:
+          "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
       },
       xGrid: {
         color: gridColor,
@@ -83,10 +89,22 @@ export function Demo() {
         tickFontColor: isDark ? "#ffffff" : "#000000",
         tickFontSize: isMobile ? 9 : 12,
         tickFontWeight: 400,
-        tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+        tickFontFamily:
+          "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
       },
     }),
-    [isDark, isMobile, curveType, color, lineWidth, areaOpacity, gridColor, gridOpacity, fps, timeSlots],
+    [
+      isDark,
+      isMobile,
+      curveType,
+      color,
+      lineWidth,
+      areaOpacity,
+      gridColor,
+      gridOpacity,
+      fps,
+      timeSlots,
+    ],
   );
 
   useEffect(() => {
@@ -98,7 +116,10 @@ export function Demo() {
       if (e.data.type === "tick") {
         setData((prev) => {
           const data = [...prev];
-          data[0] = [...data[0], { date: new Date(), value: randomInt(10, 90) }];
+          data[0] = [
+            ...data[0],
+            { date: new Date(), value: randomInt(10, 90) },
+          ];
           return data;
         });
       }
@@ -131,7 +152,7 @@ export function Demo() {
         setGridOpacity={setGridOpacity}
       />
 
-      <div className="w-full h-64 sm:h-96 p-4 border rounded-md">
+      <div className="h-64 w-full rounded-md border p-4 sm:h-96">
         <RealtimeChart options={options} data={data} />
       </div>
 

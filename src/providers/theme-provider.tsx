@@ -26,14 +26,23 @@ const ThemeProviderContext = createContext<ThemeProviderState>(initialState);
 
 const IS_SERVER = typeof window === "undefined";
 
-export function ThemeProvider({ children, defaultTheme = "system", storageKey = "ui-theme", ...props }: ThemeProviderProps) {
+export function ThemeProvider({
+  children,
+  defaultTheme = "system",
+  storageKey = "ui-theme",
+  ...props
+}: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(() => {
     if (IS_SERVER) return defaultTheme;
     return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
   });
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (IS_SERVER) return false;
-    return theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    return (
+      theme === "dark" ||
+      (theme === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches)
+    );
   });
 
   useEffect(() => {
@@ -44,7 +53,10 @@ export function ThemeProvider({ children, defaultTheme = "system", storageKey = 
     root.classList.remove("light", "dark");
 
     if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
+        .matches
+        ? "dark"
+        : "light";
 
       root.classList.add(systemTheme);
       setIsDark(systemTheme === "dark");

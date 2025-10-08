@@ -12,4 +12,3 @@ export type CurveType =
   | "step"
   | "stepAfter"
   | "stepBefore";
-

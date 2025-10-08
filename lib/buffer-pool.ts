@@ -98,7 +98,13 @@ export class BufferPool {
     color: string,
   ): { texture: WebGLTexture | null; width: number; height: number } | null {
     const now = performance.now();
-    const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
+    const dpr = Math.max(
+      1,
+      Math.min(
+        3,
+        (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1,
+      ),
+    );
 
     // Try to find existing texture with same parameters (including DPR)
     for (const pooledTexture of this.textures) {
@@ -123,7 +129,13 @@ export class BufferPool {
 
     // Create new texture if under limit
     if (this.textures.length < this.maxTextures) {
-      const textureData = this.createTextTexture(text, fontSize, fontFamily, fontWeight, color);
+      const textureData = this.createTextTexture(
+        text,
+        fontSize,
+        fontFamily,
+        fontWeight,
+        color,
+      );
       if (textureData?.texture) {
         const pooledTexture: PooledTexture = {
           texture: textureData.texture,
@@ -144,7 +156,13 @@ export class BufferPool {
     }
 
     // Fallback: create temporary texture
-    return this.createTextTexture(text, fontSize, fontFamily, fontWeight, color);
+    return this.createTextTexture(
+      text,
+      fontSize,
+      fontFamily,
+      fontWeight,
+      color,
+    );
   }
 
   /**
@@ -170,7 +188,10 @@ export class BufferPool {
 
     // Clean up old unused buffers
     this.buffers = this.buffers.filter((pooledBuffer) => {
-      if (!pooledBuffer.inUse && now - pooledBuffer.lastUsed > this.maxUnusedTime) {
+      if (
+        !pooledBuffer.inUse &&
+        now - pooledBuffer.lastUsed > this.maxUnusedTime
+      ) {
         this.gl.deleteBuffer(pooledBuffer.buffer);
         return false;
       }
@@ -179,7 +200,10 @@ export class BufferPool {
 
     // Clean up old unused textures
     this.textures = this.textures.filter((pooledTexture) => {
-      if (!pooledTexture.inUse && now - pooledTexture.lastUsed > this.maxUnusedTime) {
+      if (
+        !pooledTexture.inUse &&
+        now - pooledTexture.lastUsed > this.maxUnusedTime
+      ) {
         this.gl.deleteTexture(pooledTexture.texture);
         return false;
       }
@@ -199,7 +223,13 @@ export class BufferPool {
     fontWeight: string,
     color: string,
   ): { texture: WebGLTexture | null; width: number; height: number } {
-    const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
+    const dpr = Math.max(
+      1,
+      Math.min(
+        3,
+        (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1,
+      ),
+    );
 
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
@@ -225,16 +255,40 @@ export class BufferPool {
 
     // Create WebGL texture
     const texture = this.gl.createTexture();
-    if (!texture) return { texture: null, width: canvas.width, height: canvas.height };
+    if (!texture)
+      return { texture: null, width: canvas.width, height: canvas.height };
 
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
     this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, canvas);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+    this.gl.texImage2D(
+      this.gl.TEXTURE_2D,
+      0,
+      this.gl.RGBA,
+      this.gl.RGBA,
+      this.gl.UNSIGNED_BYTE,
+      canvas,
+    );
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_WRAP_S,
+      this.gl.CLAMP_TO_EDGE,
+    );
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_WRAP_T,
+      this.gl.CLAMP_TO_EDGE,
+    );
     // Use LINEAR so moving labels animate smoothly at subpixel positions
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_MIN_FILTER,
+      this.gl.LINEAR,
+    );
+    this.gl.texParameteri(
+      this.gl.TEXTURE_2D,
+      this.gl.TEXTURE_MAG_FILTER,
+      this.gl.LINEAR,
+    );
 
     return { texture, width: canvas.width, height: canvas.height };
   }
@@ -259,7 +313,12 @@ export class BufferPool {
   /**
    * Get pool statistics for debugging
    */
-  getStats(): { buffers: number; textures: number; buffersInUse: number; texturesInUse: number } {
+  getStats(): {
+    buffers: number;
+    textures: number;
+    buffersInUse: number;
+    texturesInUse: number;
+  } {
     return {
       buffers: this.buffers.length,
       textures: this.textures.length,

@@ -31,7 +31,8 @@ type DeepMergeAll<T extends unknown[]> = T extends [infer First, ...infer Rest]
   : unknown;
 
 export function mergeDeep<T extends unknown[]>(...sources: T): DeepMergeAll<T> {
-  const isObject = (val: unknown): val is object => val !== null && typeof val === "object" && !Array.isArray(val);
+  const isObject = (val: unknown): val is object =>
+    val !== null && typeof val === "object" && !Array.isArray(val);
 
   return sources.reduce((acc, source) => {
     if (Array.isArray(acc) && Array.isArray(source)) {
@@ -53,7 +54,9 @@ export function mergeDeep<T extends unknown[]>(...sources: T): DeepMergeAll<T> {
     }
 
     if (isObject(acc) && isObject(source)) {
-      const result: Record<string, unknown> = { ...(acc as Record<string, unknown>) };
+      const result: Record<string, unknown> = {
+        ...(acc as Record<string, unknown>),
+      };
 
       for (const [key, val] of Object.entries(source)) {
         const aVal = (acc as Record<string, unknown>)[key];
@@ -82,7 +85,11 @@ export function subSeconds(date: Date, seconds: number): Date {
 }
 
 // WebGL utility functions
-export function createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+export function createShader(
+  gl: WebGLRenderingContext,
+  type: number,
+  source: string,
+): WebGLShader | null {
   const shader = gl.createShader(type);
   if (!shader) return null;
 
@@ -98,7 +105,11 @@ export function createShader(gl: WebGLRenderingContext, type: number, source: st
   return shader;
 }
 
-export function createProgram(gl: WebGLRenderingContext, vertexShader: WebGLShader, fragmentShader: WebGLShader): WebGLProgram | null {
+export function createProgram(
+  gl: WebGLRenderingContext,
+  vertexShader: WebGLShader,
+  fragmentShader: WebGLShader,
+): WebGLProgram | null {
   const program = gl.createProgram();
   if (!program) return null;
 
@@ -115,7 +126,11 @@ export function createProgram(gl: WebGLRenderingContext, vertexShader: WebGLShad
   return program;
 }
 
-export function hexToRgba(hex: string, alpha: number, premultiply = true): [number, number, number, number] {
+export function hexToRgba(
+  hex: string,
+  alpha: number,
+  premultiply = true,
+): [number, number, number, number] {
   // Handle different hex formats
   let cleanHex = hex;
 
@@ -160,7 +175,10 @@ export function hexToRgba(hex: string, alpha: number, premultiply = true): [numb
 }
 
 // Triangulation for area rendering - creates triangles for the area between line and baseline
-export function triangulateArea(lineVertices: number[], baselineY: number): number[] {
+export function triangulateArea(
+  lineVertices: number[],
+  baselineY: number,
+): number[] {
   const triangles: number[] = [];
 
   if (lineVertices.length < 4) return triangles; // Need at least 2 points for a line
@@ -295,7 +313,14 @@ export function renderLine(
     );
   }
 
-  renderTriangles(gl, lineTriangles, color, positionLocation, colorLocation, bufferPool);
+  renderTriangles(
+    gl,
+    lineTriangles,
+    color,
+    positionLocation,
+    colorLocation,
+    bufferPool,
+  );
 }
 
 // Render grid lines using WebGL
@@ -310,7 +335,15 @@ export function renderGridLines(
 ) {
   for (const line of lines) {
     const vertices = [line.x1, line.y1, line.x2, line.y2];
-    renderLine(gl, vertices, color, lineWidth, positionLocation, colorLocation, bufferPool);
+    renderLine(
+      gl,
+      vertices,
+      color,
+      lineWidth,
+      positionLocation,
+      colorLocation,
+      bufferPool,
+    );
   }
 }
 
@@ -323,7 +356,13 @@ export function createTextTexture(
   fontWeight: string,
   color: string,
 ): { texture: WebGLTexture | null; width: number; height: number } {
-  const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
+  const dpr = Math.max(
+    1,
+    Math.min(
+      3,
+      (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1,
+    ),
+  );
 
   // Create a canvas for text rendering
   const canvas = document.createElement("canvas");
@@ -355,7 +394,8 @@ export function createTextTexture(
 
   // Create WebGL texture
   const texture = gl.createTexture();
-  if (!texture) return { texture: null, width: canvas.width, height: canvas.height };
+  if (!texture)
+    return { texture: null, width: canvas.width, height: canvas.height };
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
@@ -389,17 +429,34 @@ export function renderText(
   bufferPool?: BufferPool,
   anchor: "left" | "center" | "right" = "left",
 ) {
-  let textureData: { texture: WebGLTexture | null; width: number; height: number } | null = null;
+  let textureData: {
+    texture: WebGLTexture | null;
+    width: number;
+    height: number;
+  } | null = null;
   let shouldDeleteTexture = false;
 
   if (bufferPool) {
     // Try to get cached texture from pool
-    textureData = bufferPool.getTexture(text, fontSize, fontFamily, fontWeight, color);
+    textureData = bufferPool.getTexture(
+      text,
+      fontSize,
+      fontFamily,
+      fontWeight,
+      color,
+    );
   }
 
   if (!textureData) {
     // Fallback to creating new texture
-    textureData = createTextTexture(gl, text, fontSize, fontFamily, fontWeight, color);
+    textureData = createTextTexture(
+      gl,
+      text,
+      fontSize,
+      fontFamily,
+      fontWeight,
+      color,
+    );
     shouldDeleteTexture = true;
   }
 
@@ -408,10 +465,15 @@ export function renderText(
   const { texture, width, height } = textureData;
 
   // Use text shader program
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is just fine, seems like biome bug
   gl.useProgram(textProgram);
 
   // Set uniforms
-  gl.uniform2f(textUniformLocations.resolution, gl.canvas.width, gl.canvas.height);
+  gl.uniform2f(
+    textUniformLocations.resolution,
+    gl.canvas.width,
+    gl.canvas.height,
+  );
   gl.uniform1i(textUniformLocations.texture, 0);
 
   // Parse color
@@ -464,13 +526,27 @@ export function renderText(
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, positionsArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(textAttributeLocations.position);
-  gl.vertexAttribPointer(textAttributeLocations.position, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    textAttributeLocations.position,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0,
+  );
 
   // Bind texture coordinate buffer
   gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, texCoordsArray, gl.STATIC_DRAW);
   gl.enableVertexAttribArray(textAttributeLocations.texCoord);
-  gl.vertexAttribPointer(textAttributeLocations.texCoord, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(
+    textAttributeLocations.texCoord,
+    2,
+    gl.FLOAT,
+    false,
+    0,
+    0,
+  );
 
   // Bind texture
   gl.activeTexture(gl.TEXTURE0);

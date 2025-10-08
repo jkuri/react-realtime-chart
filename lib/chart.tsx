@@ -1,8 +1,17 @@
 import { line, max, min, scaleLinear, scaleTime, timeFormat } from "d3";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BufferPool } from "./buffer-pool";
-import { fragmentShaderSource, textFragmentShaderSource, textVertexShaderSource, vertexShaderSource } from "./shaders";
-import { type RealtimeChartData, type RealtimeChartOptions, curveTypeMapping } from "./types";
+import {
+  fragmentShaderSource,
+  textFragmentShaderSource,
+  textVertexShaderSource,
+  vertexShaderSource,
+} from "./shaders";
+import {
+  curveTypeMapping,
+  type RealtimeChartData,
+  type RealtimeChartOptions,
+} from "./types";
 import {
   createProgram,
   createShader,
@@ -92,7 +101,9 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
   const options = useMemo(() => {
     const opts = mergeDeep(defaultOptions, userOptions || {});
-    const merged = mergeDeep(mergeDeep(defaultOptions, userOptions || {}), { lines: opts.lines || [] });
+    const merged = mergeDeep(mergeDeep(defaultOptions, userOptions || {}), {
+      lines: opts.lines || [],
+    });
 
     (data || []).forEach((_, i) => {
       merged.lines[i] = {
@@ -124,7 +135,11 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
     // Create shaders
     const vertexShader = createShader(gl, gl.VERTEX_SHADER, vertexShaderSource);
-    const fragmentShader = createShader(gl, gl.FRAGMENT_SHADER, fragmentShaderSource);
+    const fragmentShader = createShader(
+      gl,
+      gl.FRAGMENT_SHADER,
+      fragmentShaderSource,
+    );
 
     if (!vertexShader || !fragmentShader) {
       console.error("Failed to create shaders");
@@ -141,8 +156,16 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     programRef.current = program;
 
     // Create text shaders and program
-    const textVertexShader = createShader(gl, gl.VERTEX_SHADER, textVertexShaderSource);
-    const textFragmentShader = createShader(gl, gl.FRAGMENT_SHADER, textFragmentShaderSource);
+    const textVertexShader = createShader(
+      gl,
+      gl.VERTEX_SHADER,
+      textVertexShaderSource,
+    );
+    const textFragmentShader = createShader(
+      gl,
+      gl.FRAGMENT_SHADER,
+      textFragmentShaderSource,
+    );
 
     if (!textVertexShader || !textFragmentShader) {
       console.error("Failed to create text shaders");
@@ -198,11 +221,16 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     (chartData: RealtimeChartData[]): RealtimeChartData[] => {
       const now = new Date();
       const validTime = subSeconds(now, options.timeSlots!);
-      let sortedData = chartData.filter(Boolean).sort((a, b) => (a.date > b.date ? 1 : -1));
+      let sortedData = chartData
+        .filter(Boolean)
+        .sort((a, b) => (a.date > b.date ? 1 : -1));
 
       // Remove old data points that are outside the time window
       let count = 0;
-      while (sortedData.length - count + 1 >= options.timeSlots! && sortedData[count + 1].date < validTime) {
+      while (
+        sortedData.length - count + 1 >= options.timeSlots! &&
+        sortedData[count + 1].date < validTime
+      ) {
         count++;
       }
       if (count > 0) {
@@ -264,8 +292,16 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           const steps = 10;
           for (let t = 0; t <= steps; t++) {
             const u = t / steps;
-            const x = (1 - u) ** 3 * currentX + 3 * (1 - u) ** 2 * u * x1 + 3 * (1 - u) * u ** 2 * x2 + u ** 3 * x3;
-            const y = (1 - u) ** 3 * currentY + 3 * (1 - u) ** 2 * u * y1 + 3 * (1 - u) * u ** 2 * y2 + u ** 3 * y3;
+            const x =
+              (1 - u) ** 3 * currentX +
+              3 * (1 - u) ** 2 * u * x1 +
+              3 * (1 - u) * u ** 2 * x2 +
+              u ** 3 * x3;
+            const y =
+              (1 - u) ** 3 * currentY +
+              3 * (1 - u) ** 2 * u * y1 +
+              3 * (1 - u) * u ** 2 * y2 +
+              u ** 3 * y3;
             vertices.push(x, y);
           }
 
@@ -304,8 +340,19 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
   const drawChart = useCallback(
     (timestamp: number) => {
       if (!canvasRef.current || !dimensions.width || !dimensions.height) return;
-      if (!glRef.current || !programRef.current || !attributeLocationsRef.current || !uniformLocationsRef.current) return;
-      if (!textProgramRef.current || !textAttributeLocationsRef.current || !textUniformLocationsRef.current) return;
+      if (
+        !glRef.current ||
+        !programRef.current ||
+        !attributeLocationsRef.current ||
+        !uniformLocationsRef.current
+      )
+        return;
+      if (
+        !textProgramRef.current ||
+        !textAttributeLocationsRef.current ||
+        !textUniformLocationsRef.current
+      )
+        return;
 
       const attributeLocations = attributeLocationsRef.current;
       const textAttributeLocations = textAttributeLocationsRef.current;
@@ -326,8 +373,14 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       const marginTop = options.margin?.top || 0;
       const marginBottom = options.margin?.bottom || 0;
 
-      const chartWidth = Math.max(0, dimensions.width - marginLeft - marginRight);
-      const chartHeight = Math.max(0, dimensions.height - marginTop - marginBottom);
+      const chartWidth = Math.max(
+        0,
+        dimensions.width - marginLeft - marginRight,
+      );
+      const chartHeight = Math.max(
+        0,
+        dimensions.height - marginTop - marginBottom,
+      );
 
       // Use full container dimensions for canvas
       const totalWidth = dimensions.width;
@@ -352,7 +405,10 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         .range([marginLeft * dpr, (marginLeft + chartWidth) * dpr])
         .domain([subSeconds(now, options.timeSlots! - 2), subSeconds(now, 2)]);
 
-      const values = data.reduce((acc, curr) => acc.concat(curr.map((d) => d.value)), [] as number[]);
+      const values = data.reduce(
+        (acc, curr) => acc.concat(curr.map((d) => d.value)),
+        [] as number[],
+      );
       const [minv, maxv] = [Number(min(values)), Number(max(values))];
       const factor = (maxv - minv) * 0.05;
       const [ymin, ymax] = [
@@ -369,20 +425,31 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       gl.clear(gl.COLOR_BUFFER_BIT);
 
       // Use our main shader program for chart rendering
+      // biome-ignore lint/correctness/useHookAtTopLevel: this is just fine, seems like biome bug
       gl.useProgram(programRef.current);
 
       // Set the resolution uniform
-      gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
+      gl.uniform2f(
+        uniformLocationsRef.current.resolution,
+        canvas.width,
+        canvas.height,
+      );
 
       // Render grid lines first (behind the data)
       // Use our main shader program for grid rendering
+      // biome-ignore lint/correctness/useHookAtTopLevel: this is just fine, seems like biome bug
       gl.useProgram(programRef.current);
-      gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
+      gl.uniform2f(
+        uniformLocationsRef.current.resolution,
+        canvas.width,
+        canvas.height,
+      );
 
       // Render X-axis grid lines
       if (options.xGrid?.enable && (options.xGrid.opacity ?? 0.5) > 0) {
         const xTicks = x.ticks(options.xGrid.tickNumber || 8);
-        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] =
+          [];
 
         // Create grid lines
         for (const tick of xTicks) {
@@ -398,8 +465,12 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         // Render grid lines with minimum opacity for visibility (unless 0)
         const requestedOpacity = options.xGrid.opacity ?? 0.5;
-        const actualOpacity = requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
-        const gridColor = hexToRgba(options.xGrid.color || "#e9e9e9", actualOpacity);
+        const actualOpacity =
+          requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
+        const gridColor = hexToRgba(
+          options.xGrid.color || "#e9e9e9",
+          actualOpacity,
+        );
         renderGridLines(
           gl,
           gridLines,
@@ -414,7 +485,8 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       // Render Y-axis grid lines
       if (options.yGrid?.enable && (options.yGrid.opacity ?? 0.5) > 0) {
         const yTicks = y.ticks(options.yGrid.tickNumber || 5);
-        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
+        const gridLines: { x1: number; y1: number; x2: number; y2: number }[] =
+          [];
 
         // Create grid lines
         for (const tick of yTicks) {
@@ -430,8 +502,12 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         // Render grid lines with minimum opacity for visibility (unless 0)
         const requestedOpacity = options.yGrid.opacity ?? 0.5;
-        const actualOpacity = requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
-        const gridColor = hexToRgba(options.yGrid.color || "#e9e9e9", actualOpacity);
+        const actualOpacity =
+          requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
+        const gridColor = hexToRgba(
+          options.yGrid.color || "#e9e9e9",
+          actualOpacity,
+        );
         renderGridLines(
           gl,
           gridLines,
@@ -494,7 +570,10 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         if (linePath) {
           const vertices = pathToVertices(linePath);
-          const color = hexToRgba(lineOptions.color || "#000", lineOptions.opacity || 1);
+          const color = hexToRgba(
+            lineOptions.color || "#000",
+            lineOptions.opacity || 1,
+          );
           const lineWidth = lineOptions.lineWidth || 2;
 
           renderLine(
@@ -518,16 +597,23 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         for (const tick of xTicks) {
           const xPos = x(tick);
-          const yPos = (marginTop + chartHeight) * dpr + (options.xGrid.tickPadding || 10) * dpr;
+          const yPos =
+            (marginTop + chartHeight) * dpr +
+            (options.xGrid.tickPadding || 10) * dpr;
           // Align to device pixels to avoid sampling blur
           const xPx = Math.round(xPos);
           const yPx = Math.round(yPos);
 
           let tickText = tick.toString();
           if (typeof options.xGrid.tickFormat === "function") {
-            tickText = options.xGrid.tickFormat(tick instanceof Date ? tick.getTime() : tick);
+            tickText = options.xGrid.tickFormat(
+              tick instanceof Date ? tick.getTime() : tick,
+            );
           } else if (typeof options.xGrid.tickFormat === "string") {
-            if (options.xGrid.tickFormat.startsWith("%") && tick instanceof Date) {
+            if (
+              options.xGrid.tickFormat.startsWith("%") &&
+              tick instanceof Date
+            ) {
               const formatter = timeFormat(options.xGrid.tickFormat);
               tickText = formatter(tick);
             }
@@ -559,7 +645,8 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         for (const tick of yTicks) {
           const fontSize = options.yGrid.tickFontSize || 10;
-          const xPos = marginLeft * dpr - (options.yGrid.tickPadding || 10) * dpr;
+          const xPos =
+            marginLeft * dpr - (options.yGrid.tickPadding || 10) * dpr;
           const labelHeight = (fontSize + 4) * dpr; // matches text texture padding
           const yPos = y(tick) - labelHeight / 2; // Center vertically using texture height
           const xPx = Math.round(xPos);
@@ -571,7 +658,8 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           } else if (typeof options.yGrid.tickFormat === "string") {
             // Handle format strings like "~s" for SI prefix
             if (options.yGrid.tickFormat === "~s") {
-              tickText = tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick.toString();
+              tickText =
+                tick >= 1000 ? `${(tick / 1000).toFixed(1)}k` : tick.toString();
             }
           }
 
