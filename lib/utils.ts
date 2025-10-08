@@ -115,7 +115,7 @@ export function createProgram(gl: WebGLRenderingContext, vertexShader: WebGLShad
   return program;
 }
 
-export function hexToRgba(hex: string, alpha: number): [number, number, number, number] {
+export function hexToRgba(hex: string, alpha: number, premultiply = true): [number, number, number, number] {
   // Handle different hex formats
   let cleanHex = hex;
 
@@ -146,7 +146,17 @@ export function hexToRgba(hex: string, alpha: number): [number, number, number, 
   }
 
   const rgb = hexToRgb(cleanHex).split(", ").map(Number);
-  return [rgb[0] / 255, rgb[1] / 255, rgb[2] / 255, alpha];
+  let r = rgb[0] / 255;
+  let g = rgb[1] / 255;
+  let b = rgb[2] / 255;
+
+  if (premultiply) {
+    r *= alpha;
+    g *= alpha;
+    b *= alpha;
+  }
+
+  return [r, g, b, alpha];
 }
 
 // Triangulation for area rendering - creates triangles for the area between line and baseline
@@ -313,6 +323,8 @@ export function createTextTexture(
   fontWeight: string,
   color: string,
 ): { texture: WebGLTexture | null; width: number; height: number } {
+  const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
+
   // Create a canvas for text rendering
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -322,18 +334,23 @@ export function createTextTexture(
   ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   const metrics = ctx.measureText(text);
 
-  // Set canvas size based on text metrics
-  canvas.width = Math.ceil(metrics.width) + 4; // Add padding
-  canvas.height = fontSize + 4; // Add padding
+  // CSS pixel dimensions
+  const cssWidth = Math.ceil(metrics.width) + 4; // padding
+  const cssHeight = fontSize + 4; // padding
+
+  // Backing store size in device pixels for crisp text
+  canvas.width = Math.max(1, Math.ceil(cssWidth * dpr));
+  canvas.height = Math.max(1, Math.ceil(cssHeight * dpr));
 
   // Clear and set font again (canvas resize clears context)
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(dpr, dpr);
   ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
   ctx.fillStyle = color;
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
 
-  // Draw text
+  // Draw text at CSS pixel coordinates
   ctx.fillText(text, 2, 2);
 
   // Create WebGL texture
@@ -341,9 +358,11 @@ export function createTextTexture(
   if (!texture) return { texture: null, width: canvas.width, height: canvas.height };
 
   gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  // Use NEAREST to avoid sampling blur on high-DPR when positions are integer-aligned
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -368,6 +387,7 @@ export function renderText(
     color: WebGLUniformLocation | null;
   },
   bufferPool?: BufferPool,
+  anchor: "left" | "center" | "right" = "left",
 ) {
   let textureData: { texture: WebGLTexture | null; width: number; height: number } | null = null;
   let shouldDeleteTexture = false;
@@ -403,10 +423,15 @@ export function renderText(
     gl.uniform4f(textUniformLocations.color, r, g, b, 1.0);
   }
 
-  // Create quad vertices for text
-  const x1 = x;
+  // Adjust x by anchor using measured width
+  let xStart = x;
+  if (anchor === "center") xStart = x - width / 2;
+  else if (anchor === "right") xStart = x - width;
+
+  // Create quad vertices for text (device-pixel units)
+  const x1 = xStart;
   const y1 = y;
-  const x2 = x + width;
+  const x2 = xStart + width;
   const y2 = y + height;
 
   const positions = [x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2];

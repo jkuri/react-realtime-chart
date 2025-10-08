@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 export function Header() {
   return (
     <header className="h-12 bg-background-header border-b border-accent">
-      <div className="container mx-auto px-4 h-full flex items-center max-w-5xl">
+      <div className="container mx-auto px-4 h-full flex items-center max-w-7xl">
         <div className="w-full flex justify-between items-center">
           <h3 className="font-medium font-heading">React Realtime Chart</h3>
           <div className="flex items-center gap-2">

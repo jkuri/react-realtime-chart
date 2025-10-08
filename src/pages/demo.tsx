@@ -1,7 +1,10 @@
+import { ConfigSnippet } from "@/components/config-snippet";
+import { Controls } from "@/components/controls";
 import { useMobile } from "@/hooks/use-mobile";
+import { generateRandomRealtimeData, randomInt } from "@/lib/data";
 import { useTheme } from "@/providers/theme-provider";
-import { generateRandomRealtimeData, randomInt } from "@/utils/data";
-import { useEffect, useState } from "react";
+import type { CurveType } from "@/types/curve";
+import { useEffect, useMemo, useState } from "react";
 import RealtimeChart, { type RealtimeChartData, type RealtimeChartOptions } from "react-realtime-chart";
 
 export function Demo() {
@@ -9,40 +12,82 @@ export function Demo() {
   const isMobile = useMobile();
   const [data, setData] = useState<RealtimeChartData[][]>([[...generateRandomRealtimeData(240, 0.1, 10, 90)]]);
 
-  const options: RealtimeChartOptions = {
-    fps: 120,
-    timeSlots: isMobile ? 10 : 20,
-    margin: {
-      top: 10,
-      right: isMobile ? 10 : 25,
-      bottom: isMobile ? 20 : 25,
-      left: isMobile ? 36 : 50,
-    },
-    colors: [isDark ? "#ffffff" : "#1c1c1c"],
-    lines: [{ area: false, areaColor: "#1c1c1c", areaOpacity: 0.35, lineWidth: 2 }],
-    yGrid: {
-      min: 0,
-      max: 100,
-      color: isDark ? "#171717" : "#09090B",
-      opacity: isDark ? 1 : 0.1,
-      tickNumber: isMobile ? 4 : 5,
-      tickFormat: (v: string | number) => `${v}%`,
-      tickPadding: isMobile ? 15 : 20,
-      tickFontWeight: 600,
-      tickFontColor: isDark ? "#ffffff" : "#000000",
-      tickFontSize: isMobile ? 9 : 12,
-      tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
-    },
-    xGrid: {
-      color: isDark ? "#171717" : "#09090B",
-      opacity: isDark ? 1 : 0.1,
-      tickNumber: isMobile ? 3 : 7,
-      tickFontColor: isDark ? "#ffffff" : "#000000",
-      tickFontSize: isMobile ? 9 : 12,
-      tickFontWeight: 600,
-      tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
-    },
-  };
+  const [fps, setFps] = useState(120);
+  const [timeSlots, setTimeSlots] = useState(isMobile ? 10 : 20);
+  const [curveType, setCurveType] = useState<CurveType>("basis");
+  const [color, setColor] = useState(isDark ? "#ffffff" : "#09090B");
+  const [areaOpacity, setAreaOpacity] = useState(0.03);
+  const [lineWidth, setLineWidth] = useState(2);
+  const [gridColor, setGridColor] = useState(isDark ? "#171717" : "#CCCCCC");
+  const [gridOpacity, setGridOpacity] = useState(isDark ? 1 : 0.1);
+
+  useEffect(() => {
+    const pointsPerSecond = 10;
+    const count = Math.max(1, timeSlots * pointsPerSecond);
+    setData([[...generateRandomRealtimeData(count, 0.1, 10, 90)]]);
+  }, [timeSlots]);
+
+  useEffect(() => {
+    if (color === "#ffffff" || color === "#09090B") {
+      setColor(isDark ? "#ffffff" : "#09090B");
+    }
+
+    if (gridColor === "#171717" || gridColor === "#CCCCCC") {
+      setGridColor(isDark ? "#171717" : "#CCCCCC");
+    }
+
+    if ((isDark && gridOpacity === 0.1) || (!isDark && gridOpacity === 1)) {
+      setGridOpacity(isDark ? 1 : 0.1);
+    }
+  }, [isDark]);
+
+  const options: RealtimeChartOptions = useMemo(
+    () => ({
+      fps,
+      timeSlots,
+      margin: {
+        top: 10,
+        right: isMobile ? 10 : 25,
+        bottom: isMobile ? 20 : 25,
+        left: isMobile ? 40 : 50,
+      },
+      colors: [color],
+      lines: [
+        {
+          area: areaOpacity > 0,
+          areaColor: color,
+          areaOpacity,
+          lineWidth,
+          curve: curveType,
+        },
+      ],
+      yGrid: {
+        min: 0,
+        max: 100,
+        color: gridColor,
+        opacity: gridOpacity,
+        size: 1,
+        tickNumber: isMobile ? 4 : 5,
+        tickFormat: (v: string | number) => `${v}%`,
+        tickPadding: isMobile ? 15 : 20,
+        tickFontWeight: 400,
+        tickFontColor: isDark ? "#ffffff" : "#000000",
+        tickFontSize: isMobile ? 9 : 12,
+        tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+      },
+      xGrid: {
+        color: gridColor,
+        opacity: gridOpacity,
+        size: 1,
+        tickNumber: isMobile ? 3 : 7,
+        tickFontColor: isDark ? "#ffffff" : "#000000",
+        tickFontSize: isMobile ? 9 : 12,
+        tickFontWeight: 400,
+        tickFontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif",
+      },
+    }),
+    [isDark, isMobile, curveType, color, lineWidth, areaOpacity, gridColor, gridOpacity, fps, timeSlots],
+  );
 
   useEffect(() => {
     const worker = new Worker("/timer-worker.js");
@@ -65,5 +110,41 @@ export function Demo() {
     };
   }, []);
 
-  return <RealtimeChart options={options} data={data} />;
+  return (
+    <div className="flex flex-col gap-4">
+      <Controls
+        fps={fps}
+        setFps={setFps}
+        timeSlots={timeSlots}
+        setTimeSlots={setTimeSlots}
+        curveType={curveType}
+        setCurveType={setCurveType}
+        color={color}
+        setColor={setColor}
+        areaOpacity={areaOpacity}
+        setAreaOpacity={setAreaOpacity}
+        lineWidth={lineWidth}
+        setLineWidth={setLineWidth}
+        gridColor={gridColor}
+        setGridColor={setGridColor}
+        gridOpacity={gridOpacity}
+        setGridOpacity={setGridOpacity}
+      />
+
+      <div className="w-full h-64 sm:h-96 p-4 border rounded-md">
+        <RealtimeChart options={options} data={data} />
+      </div>
+
+      <ConfigSnippet
+        fps={fps}
+        timeSlots={timeSlots}
+        curveType={curveType}
+        color={color}
+        areaOpacity={areaOpacity}
+        lineWidth={lineWidth}
+        gridColor={gridColor}
+        gridOpacity={gridOpacity}
+      />
+    </div>
+  );
 }

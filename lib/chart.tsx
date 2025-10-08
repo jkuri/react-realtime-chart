@@ -28,7 +28,7 @@ const defaultOptions: RealtimeChartOptions = {
   xGrid: {
     enable: true,
     color: "#e9e9e9",
-    size: 2,
+    size: 1,
     dashed: true,
     opacity: 0.5,
     ticks: true,
@@ -43,7 +43,7 @@ const defaultOptions: RealtimeChartOptions = {
   yGrid: {
     enable: true,
     color: "#e9e9e9",
-    size: 2,
+    size: 1,
     dashed: true,
     opacity: 0.5,
     min: "auto",
@@ -186,9 +186,10 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
     // Initialize buffer pool
     bufferPoolRef.current = new BufferPool(gl);
 
-    // Enable blending for transparency
+    // Enable blending for transparency (premultiplied alpha for correct page compositing)
     gl.enable(gl.BLEND);
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.enable(gl.DITHER);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
 
     return true;
   }, []);
@@ -252,7 +253,6 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           vertices.push(currentX, currentY);
         }
       } else if (type === "C") {
-        // For cubic bezier curves, we'll approximate with line segments
         for (let i = 0; i < coords.length; i += 6) {
           const x1 = coords[i];
           const y1 = coords[i + 1];
@@ -261,7 +261,6 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
           const x3 = coords[i + 4];
           const y3 = coords[i + 5];
 
-          // Simple approximation: add intermediate points
           const steps = 10;
           for (let t = 0; t <= steps; t++) {
             const u = t / steps;
@@ -333,17 +332,24 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       // Use full container dimensions for canvas
       const totalWidth = dimensions.width;
       const totalHeight = dimensions.height;
+      const dpr = window.devicePixelRatio || 1;
 
-      canvas.width = totalWidth;
-      canvas.height = totalHeight;
-      canvas.style.width = `${totalWidth}px`;
-      canvas.style.height = `${totalHeight}px`;
+      // Set canvas size accounting for device pixel ratio (only when changed)
+      const targetWidth = Math.floor(totalWidth * dpr);
+      const targetHeight = Math.floor(totalHeight * dpr);
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        canvas.style.width = `${totalWidth}px`;
+        canvas.style.height = `${totalHeight}px`;
+      }
 
+      // Ensure viewport matches current canvas size
       gl.viewport(0, 0, canvas.width, canvas.height);
 
       const now = new Date();
       const x = scaleTime()
-        .range([marginLeft, marginLeft + chartWidth])
+        .range([marginLeft * dpr, (marginLeft + chartWidth) * dpr])
         .domain([subSeconds(now, options.timeSlots! - 2), subSeconds(now, 2)]);
 
       const values = data.reduce((acc, curr) => acc.concat(curr.map((d) => d.value)), [] as number[]);
@@ -355,7 +361,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       ];
 
       const y = scaleLinear()
-        .range([marginTop + chartHeight, marginTop])
+        .range([(marginTop + chartHeight) * dpr, marginTop * dpr])
         .domain([ymin || 0, ymax || 100]);
 
       // Clear the canvas
@@ -374,23 +380,25 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       gl.uniform2f(uniformLocationsRef.current.resolution, canvas.width, canvas.height);
 
       // Render X-axis grid lines
-      if (options.xGrid?.enable) {
+      if (options.xGrid?.enable && (options.xGrid.opacity ?? 0.5) > 0) {
         const xTicks = x.ticks(options.xGrid.tickNumber || 8);
         const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
         // Create grid lines
         for (const tick of xTicks) {
-          const xPos = x(tick);
+          // Align to pixel boundaries for crisp 1px vertical lines
+          const xPos = Math.floor(x(tick)) + 0.5;
           gridLines.push({
             x1: xPos,
-            y1: marginTop,
+            y1: marginTop * dpr,
             x2: xPos,
-            y2: marginTop + chartHeight,
+            y2: (marginTop + chartHeight) * dpr,
           });
         }
 
-        // Render grid lines
-        const actualOpacity = Math.max(0.15, options.xGrid.opacity || 0.5);
+        // Render grid lines with minimum opacity for visibility (unless 0)
+        const requestedOpacity = options.xGrid.opacity ?? 0.5;
+        const actualOpacity = requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
         const gridColor = hexToRgba(options.xGrid.color || "#e9e9e9", actualOpacity);
         renderGridLines(
           gl,
@@ -404,23 +412,25 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
       }
 
       // Render Y-axis grid lines
-      if (options.yGrid?.enable) {
+      if (options.yGrid?.enable && (options.yGrid.opacity ?? 0.5) > 0) {
         const yTicks = y.ticks(options.yGrid.tickNumber || 5);
         const gridLines: { x1: number; y1: number; x2: number; y2: number }[] = [];
 
         // Create grid lines
         for (const tick of yTicks) {
-          const yPos = y(tick);
+          // Align to pixel boundaries for crisp 1px horizontal lines
+          const yPos = Math.floor(y(tick)) + 0.5;
           gridLines.push({
-            x1: marginLeft,
+            x1: marginLeft * dpr,
             y1: yPos,
-            x2: marginLeft + chartWidth,
+            x2: (marginLeft + chartWidth) * dpr,
             y2: yPos,
           });
         }
 
-        // Render grid lines
-        const actualOpacity = Math.max(0.15, options.yGrid.opacity || 0.5);
+        // Render grid lines with minimum opacity for visibility (unless 0)
+        const requestedOpacity = options.yGrid.opacity ?? 0.5;
+        const actualOpacity = requestedOpacity > 0 ? Math.max(0.15, requestedOpacity) : 0;
         const gridColor = hexToRgba(options.yGrid.color || "#e9e9e9", actualOpacity);
         renderGridLines(
           gl,
@@ -435,10 +445,10 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
       // Enable scissor test to clip chart content to the chart area
       gl.enable(gl.SCISSOR_TEST);
-      const chartLeft = marginLeft;
-      const chartTop = marginTop;
-      const scissorWidth = chartWidth;
-      const scissorHeight = chartHeight;
+      const chartLeft = marginLeft * dpr;
+      const chartTop = marginTop * dpr;
+      const scissorWidth = chartWidth * dpr;
+      const scissorHeight = chartHeight * dpr;
       // Note: WebGL scissor coordinates are from bottom-left, so we need to flip Y
       const scissorY = canvas.height - chartTop - scissorHeight;
       gl.scissor(chartLeft, scissorY, scissorWidth, scissorHeight);
@@ -458,18 +468,21 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
           if (linePath) {
             const lineVertices = pathToVertices(linePath);
-            const baselineY = marginTop + chartHeight; // Bottom of chart area
+            const baselineY = (marginTop + chartHeight) * dpr; // Bottom of chart area
             const triangles = triangulateArea(lineVertices, baselineY);
-            const color = hexToRgba(lineOptions.areaColor || "#000", lineOptions.areaOpacity || 0.1);
+            const opacity = lineOptions.areaOpacity || 0.1;
+            const color = hexToRgba(lineOptions.areaColor || "#000", opacity);
 
-            renderTriangles(
-              gl,
-              triangles,
-              color,
-              attributeLocations.position,
-              attributeLocations.color,
-              bufferPoolRef.current || undefined,
-            );
+            if (triangles.length > 0) {
+              renderTriangles(
+                gl,
+                triangles,
+                color,
+                attributeLocations.position,
+                attributeLocations.color,
+                bufferPoolRef.current || undefined,
+              );
+            }
           }
         }
 
@@ -505,7 +518,10 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
 
         for (const tick of xTicks) {
           const xPos = x(tick);
-          const yPos = marginTop + chartHeight + (options.xGrid.tickPadding || 10);
+          const yPos = (marginTop + chartHeight) * dpr + (options.xGrid.tickPadding || 10) * dpr;
+          // Align to device pixels to avoid sampling blur
+          const xPx = Math.round(xPos);
+          const yPx = Math.round(yPos);
 
           let tickText = tick.toString();
           if (typeof options.xGrid.tickFormat === "function") {
@@ -517,15 +533,14 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             }
           }
 
-          // Calculate text width for centering
-          const textWidth = tickText.length * (options.xGrid.tickFontSize || 10) * 0.6; // Approximate width
+          const fontSize = options.xGrid.tickFontSize || 10;
 
           renderText(
             gl,
             tickText,
-            xPos - textWidth / 2, // Center the text properly
-            yPos,
-            options.xGrid.tickFontSize || 10,
+            xPx, // Center handled in renderText via anchor
+            yPx,
+            fontSize,
             options.xGrid.tickFontFamily || "sans-serif",
             String(options.xGrid.tickFontWeight || "normal"),
             options.xGrid.tickFontColor || "#6B6C6F",
@@ -533,6 +548,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             textAttributeLocations,
             textUniformLocations,
             bufferPoolRef.current || undefined,
+            "center",
           );
         }
       }
@@ -542,8 +558,12 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
         const yTicks = y.ticks(options.yGrid.tickNumber || 5);
 
         for (const tick of yTicks) {
-          const xPos = marginLeft - (options.yGrid.tickPadding || 10);
-          const yPos = y(tick) - (options.yGrid.tickFontSize || 10) / 2; // Center vertically
+          const fontSize = options.yGrid.tickFontSize || 10;
+          const xPos = marginLeft * dpr - (options.yGrid.tickPadding || 10) * dpr;
+          const labelHeight = (fontSize + 4) * dpr; // matches text texture padding
+          const yPos = y(tick) - labelHeight / 2; // Center vertically using texture height
+          const xPx = Math.round(xPos);
+          const yPx = Math.round(yPos);
 
           let tickText = tick.toString();
           if (typeof options.yGrid.tickFormat === "function") {
@@ -555,15 +575,12 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             }
           }
 
-          // Calculate text width for right alignment
-          const textWidth = tickText.length * (options.yGrid.tickFontSize || 10) * 0.6; // Approximate width
-
           renderText(
             gl,
             tickText,
-            xPos - textWidth, // Right-align the text
-            yPos,
-            options.yGrid.tickFontSize || 10,
+            xPx, // Right alignment handled in renderText via anchor
+            yPx,
+            fontSize,
             options.yGrid.tickFontFamily || "sans-serif",
             String(options.yGrid.tickFontWeight || "normal"),
             options.yGrid.tickFontColor || "#6B6C6F",
@@ -571,6 +588,7 @@ const RealtimeChart = ({ data, options: userOptions }: RealtimeChartProps) => {
             textAttributeLocations,
             textUniformLocations,
             bufferPoolRef.current || undefined,
+            "right",
           );
         }
       }

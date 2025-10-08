@@ -15,7 +15,7 @@ export const vertexShaderSource = `
 `;
 
 export const fragmentShaderSource = `
-  precision mediump float;
+  precision highp float;
   varying vec4 v_color;
 
   void main() {
@@ -47,6 +47,7 @@ export const textFragmentShaderSource = `
 
   void main() {
     vec4 texColor = texture2D(u_texture, v_texCoord);
-    gl_FragColor = vec4(u_color.rgb, texColor.a * u_color.a);
+    float a = texColor.a * u_color.a;
+    gl_FragColor = vec4(u_color.rgb * a, a);
   }
 `;

@@ -19,6 +19,7 @@ interface PooledTexture {
   fontFamily: string;
   fontWeight: string;
   color: string;
+  dpr: number;
   inUse: boolean;
   lastUsed: number;
 }
@@ -97,8 +98,9 @@ export class BufferPool {
     color: string,
   ): { texture: WebGLTexture | null; width: number; height: number } | null {
     const now = performance.now();
+    const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
 
-    // Try to find existing texture with same parameters
+    // Try to find existing texture with same parameters (including DPR)
     for (const pooledTexture of this.textures) {
       if (
         !pooledTexture.inUse &&
@@ -106,7 +108,8 @@ export class BufferPool {
         pooledTexture.fontSize === fontSize &&
         pooledTexture.fontFamily === fontFamily &&
         pooledTexture.fontWeight === fontWeight &&
-        pooledTexture.color === color
+        pooledTexture.color === color &&
+        pooledTexture.dpr === dpr
       ) {
         pooledTexture.inUse = true;
         pooledTexture.lastUsed = now;
@@ -131,6 +134,7 @@ export class BufferPool {
           fontFamily,
           fontWeight,
           color,
+          dpr,
           inUse: true,
           lastUsed: now,
         };
@@ -195,38 +199,44 @@ export class BufferPool {
     fontWeight: string,
     color: string,
   ): { texture: WebGLTexture | null; width: number; height: number } {
+    const dpr = Math.max(1, Math.min(3, (typeof window !== "undefined" ? window.devicePixelRatio : 1) || 1));
+
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return { texture: null, width: 0, height: 0 };
 
-    // Set font and measure text
+    // Measure in CSS px
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     const metrics = ctx.measureText(text);
-    const width = Math.ceil(metrics.width);
-    const height = Math.ceil(fontSize * 1.2); // Add some padding
+    const cssWidth = Math.ceil(metrics.width) + 2;
+    const cssHeight = Math.ceil(fontSize) + 2;
 
-    canvas.width = width;
-    canvas.height = height;
+    // Backing store in device px
+    canvas.width = Math.max(1, Math.ceil(cssWidth * dpr));
+    canvas.height = Math.max(1, Math.ceil(cssHeight * dpr));
 
-    // Redraw with proper font (canvas reset clears font)
+    // Redraw with proper font after resize
+    ctx.scale(dpr, dpr);
     ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
     ctx.fillStyle = color;
     ctx.textAlign = "left";
     ctx.textBaseline = "top";
-    ctx.fillText(text, 0, 0);
+    ctx.fillText(text, 1, 1);
 
     // Create WebGL texture
     const texture = this.gl.createTexture();
-    if (!texture) return { texture: null, width, height };
+    if (!texture) return { texture: null, width: canvas.width, height: canvas.height };
 
     this.gl.bindTexture(this.gl.TEXTURE_2D, texture);
+    this.gl.pixelStorei(this.gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, canvas);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR);
-    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR);
+    // Avoid smoothing blur on high-DPR
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+    this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
 
-    return { texture, width, height };
+    return { texture, width: canvas.width, height: canvas.height };
   }
 
   /**
