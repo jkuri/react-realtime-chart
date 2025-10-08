@@ -49,7 +49,7 @@ export function Demo() {
         top: 10,
         right: isMobile ? 10 : 25,
         bottom: isMobile ? 20 : 25,
-        left: isMobile ? 40 : 50,
+        left: isMobile ? 40 : 55,
       },
       colors: [color],
       lines: [

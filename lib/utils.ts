@@ -360,9 +360,9 @@ export function createTextTexture(
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
-  // Use NEAREST to avoid sampling blur on high-DPR when positions are integer-aligned
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  // Use LINEAR so text moves smoothly when translating subpixel across frames
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -423,16 +423,19 @@ export function renderText(
     gl.uniform4f(textUniformLocations.color, r, g, b, 1.0);
   }
 
-  // Adjust x by anchor using measured width
+  // Adjust x by anchor using measured width and snap to integer device pixels
   let xStart = x;
   if (anchor === "center") xStart = x - width / 2;
   else if (anchor === "right") xStart = x - width;
+  // Snap to integer to avoid half-pixel sampling artefacts when width is odd
+  xStart = Math.round(xStart);
+  const yStart = Math.round(y);
 
   // Create quad vertices for text (device-pixel units)
   const x1 = xStart;
-  const y1 = y;
+  const y1 = yStart;
   const x2 = xStart + width;
-  const y2 = y + height;
+  const y2 = yStart + height;
 
   const positions = [x1, y1, x2, y1, x1, y2, x1, y2, x2, y1, x2, y2];
   const texCoords = [0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 1, 1];
